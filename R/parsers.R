@@ -13,7 +13,8 @@
 #'
 read_adv_status <- function(file, ts_offset = 0) {
   readr::read_fwf(file) |>
-    dplyr::mutate(ts = lubridate::make_datetime(year = X3, month = X1, day = X2,
+    dplyr::mutate(across(X1:X6, as.integer),
+      ts = lubridate::make_datetime(year = X3, month = X1, day = X2,
                               hour = X4, min = X5, sec = X6,
                               tz = "EDT"),
            timestamp = ts + ts_offset,
@@ -68,14 +69,14 @@ read_met <- function(file) {
 #' @return A data frame of met data
 #' @export
 parse_met <- function(files) {
-  met_lines <- map(files, read_met, .progress = TRUE) |>
-    reduce(c) |>
-    str_remove("^.*M:")
+  met_lines <- purrr::map(files, read_met, .progress = TRUE) |>
+    purrr::reduce(c) |>
+    stringr::str_remove("^.*M:")
 
-  read_csv(I(met_lines), col_names = c("hour", "min", "sec", "day", "month", "year",
+  readr::read_csv(I(met_lines), col_names = c("hour", "min", "sec", "day", "month", "year",
                                        "par", "wind_speed", "wind_dir")) |>
-    filter(year == 2023) |>
-    mutate(ts = make_datetime(year = year, month = month, day = day,
+    dplyr::filter(year == 2023) |>
+    dplyr::mutate(ts = lubridate::make_datetime(year = year, month = month, day = day,
                               hour = hour, min = min, sec = sec))
 }
 
@@ -95,16 +96,16 @@ read_status <- function(file) {
 #' @return A data frame of ADV status data
 #' @export
 parse_status <- function(files) {
-  status_lines <- map(files, read_status, .progress = TRUE) |>
-    reduce(c) |>
-    str_remove("^.*S:")
+  status_lines <- purrr::map(files, read_status, .progress = TRUE) |>
+    purrr::reduce(c) |>
+    stringr::str_remove("^.*S:")
 
-  read_csv(I(status_lines), col_names = c("hour", "min", "sec", "day", "month", "year",
+  readr::read_csv(I(status_lines), col_names = c("hour", "min", "sec", "day", "month", "year",
                                           "vmin", "vsec", "vday", "vhour", "vyear", "vmo",
                                           "bat", "ss", "head", "pitch", "roll", "temp",
                                           "empty", "CR", "BV", "PWR")) |>
-    filter(year == 2023) |>
-    mutate(ts = make_datetime(year = year, month = month, day = day,
+    dplyr::filter(year == 2023) |>
+    dplyr::mutate(ts = lubridate::make_datetime(year = year, month = month, day = day,
                               hour = hour, min = min, sec = sec),
            bat = bat * .1)
 }
