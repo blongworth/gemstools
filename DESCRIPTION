@@ -6,7 +6,16 @@ Authors@R:
            comment = c(ORCID = "0000-0001-8318-2054"))
 Description: Data import and cleaning from LECS & GEMS MCU SD cards, ADV data, etc.
     Plotting and manipulation of data.
-License: `use_mit_license()`
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
+Imports:
+    dplyr,
+    dygraphs,
+    lubridate,
+    purrr,
+    readr,
+    stringr,
+    xts
+    

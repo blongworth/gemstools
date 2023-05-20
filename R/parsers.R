@@ -25,7 +25,7 @@ read_adv_status <- function(file, ts_offset) {
 
 #' Read data lines from given file
 #'
-#' @param file
+#' @param file file to read
 #'
 read_data <- function(file) {
    lines <- readLines(file)
@@ -54,7 +54,7 @@ parse_data <- function(files) {
 
 #' Read met lines from given file
 #'
-#' @param file
+#' @param file file to read
 #'
 read_met <- function(file) {
    lines <- readLines(file)
@@ -81,7 +81,7 @@ parse_met <- function(files) {
 
 #' Read status lines from given file
 #'
-#' @param file
+#' @param file file to read
 #'
 read_status <- function(file) {
    lines <- readLines(file)
