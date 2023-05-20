@@ -11,7 +11,7 @@
 #' @return A data frame of status data
 #' @export
 #'
-read_adv_status <- function(file, ts_offset) {
+read_adv_status <- function(file, ts_offset = 0) {
   readr::read_fwf(file) |>
     dplyr::mutate(ts = lubridate::make_datetime(year = X3, month = X1, day = X2,
                               hour = X4, min = X5, sec = X6,

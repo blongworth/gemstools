@@ -4,7 +4,7 @@
 \alias{read_adv_status}
 \title{Parse ADV status file}
 \usage{
-read_adv_status(file, ts_offset)
+read_adv_status(file, ts_offset = 0)
 }
 \arguments{
 \item{file}{ADV .sen status file}
