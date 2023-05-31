@@ -76,7 +76,7 @@ parse_met <- function(files) {
   readr::read_csv(I(met_lines), col_names = c("hour", "min", "sec", "day", "month", "year",
                                        "par", "wind_speed", "wind_dir")) |>
     dplyr::filter(year == 2023) |>
-    dplyr::mutate(ts = lubridate::make_datetime(year = year, month = month, day = day,
+    dplyr::mutate(timestamp = lubridate::make_datetime(year = year, month = month, day = day,
                               hour = hour, min = min, sec = sec))
 }
 
@@ -101,11 +101,27 @@ parse_status <- function(files) {
     stringr::str_remove("^.*S:")
 
   readr::read_csv(I(status_lines), col_names = c("hour", "min", "sec", "day", "month", "year",
-                                          "vmin", "vsec", "vday", "vhour", "vyear", "vmo",
+                                          "adv_min", "adv_sec", "adv_day", "adv_hour", "adv_year", "adv_month",
                                           "bat", "ss", "head", "pitch", "roll", "temp",
                                           "empty", "CR", "BV", "PWR")) |>
     dplyr::filter(year == 2023) |>
-    dplyr::mutate(ts = lubridate::make_datetime(year = year, month = month, day = day,
+    dplyr::mutate(timestamp = lubridate::make_datetime(year = year, month = month, day = day,
                               hour = hour, min = min, sec = sec),
            bat = bat * .1)
+}
+
+#' Parse data from LECS website
+#'
+#' Currently need to copy data from https://gems.whoi.edu/LECSrawdata/
+#' and paste to a file. Aiming to make an API eventually!
+#'
+#' @param file
+#'
+#' @return a dataframe in LECS SD file format
+#' @export
+#'
+parse_web <- function(file) {
+
+
+
 }
