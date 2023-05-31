@@ -9,7 +9,7 @@ Description: Data import and cleaning from LECS & GEMS MCU SD cards, ADV data, e
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.3
 Imports:
     dplyr,
     dygraphs,
@@ -18,4 +18,3 @@ Imports:
     readr,
     stringr,
     xts
-    

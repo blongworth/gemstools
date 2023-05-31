@@ -110,6 +110,33 @@ parse_status <- function(files) {
            bat = bat * .1)
 }
 
+#' Read status messages from given file
+#'
+#' @param file file to read
+#'
+read_statusmsg <- function(file) {
+   lines <- readLines(file)
+   lines[grep('^!', lines)]
+}
+
+
+#' Parse status messages from MCU SD card files
+#'
+#' @param files a list of data files
+#'
+#' @return A data frame of status messages
+#' @export
+parse_statusmsg <- function(files) {
+  statusmsg_lines <- purrr::map(files, read_statusmsg, .progress = TRUE) |>
+    purrr::reduce(c) |>
+    stringr::str_remove("^!")
+
+  readr::read_csv(I(statusmsg_lines), col_names = c("hour", "min", "sec", "day", "month", "year", "message")) |>
+    dplyr::filter(year == 2023) |>
+    dplyr::mutate(timestamp = lubridate::make_datetime(year = year, month = month, day = day,
+                              hour = hour, min = min, sec = sec))
+}
+
 #' Parse data from LECS website
 #'
 #' Currently need to copy data from https://gems.whoi.edu/LECSrawdata/
