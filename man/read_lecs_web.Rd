@@ -4,11 +4,15 @@
 \alias{read_lecs_web}
 \title{Read LECS data from website}
 \usage{
-read_lecs_web()
+read_lecs_web(start_date = NULL)
+}
+\arguments{
+\item{start_date}{Date to get date from. Date object or string coerceable
+to a date}
 }
 \value{
 a single column data frame
 }
 \description{
-Reads HTML table from LECSrawdata into a single column data frame
+Reads HTML table from LECS_data into a single column data frame
 }
