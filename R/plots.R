@@ -19,6 +19,5 @@ plot_ts <- function(data, field, timestamp = "timestamp", title = field) {
     dygraphs::dyRangeSelector()
 }
 
-# plot a field without TS
-#ggplot(df, aes(1:nrow(df), pH)) +
-#  geom_scattermore()
+
+

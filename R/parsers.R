@@ -137,18 +137,4 @@ parse_statusmsg <- function(files) {
                               hour = hour, min = min, sec = sec))
 }
 
-#' Parse data from LECS website
-#'
-#' Currently need to copy data from https://gems.whoi.edu/LECSrawdata/
-#' and paste to a file. Aiming to make an API eventually!
-#'
-#' @param file
-#'
-#' @return a dataframe in LECS SD file format
-#' @export
-#'
-parse_web <- function(file) {
 
-
-
-}
