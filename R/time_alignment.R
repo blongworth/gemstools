@@ -1,5 +1,43 @@
 # Functions for adding timestamps to ADV data lines
 
+#' Apply timestamps to LECS ADV data
+#'
+#' Dplyr version from June Choe (github.com/yjunechoe)
+#'
+#' @param df A dataframe with row_num and type from the original file
+#' @param status A dataframe with parsed timestamps and original row_nums
+#' @param adv_data A dataframe with ADV data lines
+#'
+#' @return ADV data with timestamps added
+#' @export
+#' @importFrom dplyr select left_join mutate
+make_lecs_ts <- function(df, status, adv_data) {
+  df |>
+    select(row_num, type) |>
+    left_join(select(status, row_num, timestamp), by = "row_num") |>
+    left_join(select(adv_data, -type), by = "row_num") |>
+    mutate(
+      timestamp = replace(timestamp, which(type == "S") + 1, timestamp[type == "S"])
+    ) %>%
+    dplyr::filter(type == "D") %>%
+    mutate(
+      boundary = c(TRUE, abs(diff(count)) > 3), # tol = 3
+      spread_group = replace(rep(NA, n()), which(boundary), seq_len(sum(boundary)))
+    ) %>%
+    tidyr::fill(spread_group) %>%
+    dplyr::group_by(spread_group) %>%
+    mutate(
+      difftime = ifelse(any(!is.na(timestamp)),
+                        (count - count[!is.na(timestamp)]) * 0.0625,
+                        NA),
+      timestamp = ifelse(any(!is.na(timestamp)),
+                         timestamp[!is.na(timestamp)] + difftime,
+                         NA)
+    ) %>%
+    dplyr::ungroup() |>
+    select(-c(boundary, spread_group, difftime))
+}
+
 #' Difference between two numbers in a circular 1 byte number
 #'
 #' @param c1 first number
@@ -38,7 +76,7 @@ prev_status <- function(stat_df, row_num) {
 #' @return row_num of next status line
 next_status <- function(stat_df, row_num) {
   prev_stats <- stat_df["row_num"][stat_df["row_num"] > row_num]
-  if (is.logical(prev_stats)) { # test for no previous status line
+  if (is.logical(prev_stats)) { # test for no  status line
     NA
   } else {
     min(prev_stats)
@@ -72,7 +110,7 @@ calc_ts <- function(cur_count, prev_ts, next_ts, prev_count, next_count, interva
   prev_diff <- counts_between(prev_count, cur_count)
   next_diff <- counts_between(cur_count, next_count)
   if (is.na(next_diff) | is.na(prev_diff)) return(NA)
-  if (next_diff > prev_diff) {
+  if ( next_diff > prev_diff ) {
     prev_ts + prev_diff * interval
   } else {
     next_ts - next_diff * interval
