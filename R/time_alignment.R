@@ -4,35 +4,30 @@
 #'
 #' Dplyr version from June Choe (github.com/yjunechoe)
 #'
-#' @param df A dataframe with row_num and type from the original file
-#' @param status A dataframe with parsed timestamps and original row_nums
 #' @param adv_data A dataframe with ADV data lines
+#' @param status A dataframe with parsed timestamps and original row_nums
 #'
 #' @return ADV data with timestamps added
 #' @export
-#' @importFrom dplyr select left_join mutate
-make_lecs_ts <- function(df, status, adv_data) {
-  df |>
-    select(row_num, type) |>
-    left_join(select(status, row_num, timestamp), by = "row_num") |>
-    left_join(select(adv_data, -type), by = "row_num") |>
+#' @importFrom dplyr select mutate
+make_lecs_ts <- function(adv_data, status) {
+  adv_data |>
+    mutate(timestamp = as.POSIXct(NA)) |>
+    dplyr::bind_rows(select(status, row_num, type, timestamp)) |>
+    dplyr::arrange(row_num) |>
     mutate(
       timestamp = replace(timestamp, which(type == "S") + 1, timestamp[type == "S"])
     ) %>%
     dplyr::filter(type == "D") %>%
     mutate(
       boundary = c(TRUE, abs(diff(count)) > 3), # tol = 3
-      spread_group = replace(rep(NA, n()), which(boundary), seq_len(sum(boundary)))
+      spread_group = replace(rep(NA, dplyr::n()), which(boundary), seq_len(sum(boundary)))
     ) %>%
     tidyr::fill(spread_group) %>%
     dplyr::group_by(spread_group) %>%
     mutate(
-      difftime = ifelse(any(!is.na(timestamp)),
-                        (count - count[!is.na(timestamp)]) * 0.0625,
-                        NA),
-      timestamp = ifelse(any(!is.na(timestamp)),
-                         timestamp[!is.na(timestamp)] + difftime,
-                         NA)
+      difftime = (count - count[!is.na(timestamp)]) * 0.0625,
+      timestamp = timestamp[!is.na(timestamp)] + difftime,
     ) %>%
     dplyr::ungroup() |>
     select(-c(boundary, spread_group, difftime))

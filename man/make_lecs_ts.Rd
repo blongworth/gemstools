@@ -4,14 +4,12 @@
 \alias{make_lecs_ts}
 \title{Apply timestamps to LECS ADV data}
 \usage{
-make_lecs_ts(df, status, adv_data)
+make_lecs_ts(adv_data, status)
 }
 \arguments{
-\item{df}{A dataframe with row_num and type from the original file}
+\item{adv_data}{A dataframe with ADV data lines}
 
 \item{status}{A dataframe with parsed timestamps and original row_nums}
-
-\item{adv_data}{A dataframe with ADV data lines}
 }
 \value{
 ADV data with timestamps added
