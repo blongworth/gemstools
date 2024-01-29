@@ -1,4 +1,3 @@
-
 #' Parse LECS metadata
 #'
 #' Add row numbers, line type, number and line of send (web data),
@@ -10,10 +9,10 @@
 lecs_add_metadata <- function(df_raw) {
   df_raw |>
     mutate(row_num = row_number(),
-           type = str_match(X1, "\\[\\d+\\]([DMS$!]):?")[,2],
+           type = stringr::str_match(X1, "\\[\\d+\\]([DMS$!]):?")[,2],
            send = cumsum(type == "$"),
-           line = as.integer(str_match(X1, "\\[(\\d+)\\][DMS$!]:?")[,2]),
-           data = str_remove(X1, "\\[\\d+\\][DMS$!]:?")) |>
+           line = as.integer(stringr::str_match(X1, "\\[(\\d+)\\][DMS$!]:?")[,2]),
+           data = stringr::str_remove(X1, "\\[\\d+\\][DMS$!]:?")) |>
     select(row_num, send, type, line, data)
 }
 
@@ -25,15 +24,15 @@ lecs_add_metadata <- function(df_raw) {
 #' @export
 lecs_post_times <- function(df) {
   df |>
-    filter(type == "$") |>
-    separate(data,
+    dplyr::filter(type == "$") |>
+    tidyr::separate(data,
              into = c('hour', 'min', 'sec',
                       'day', 'month', 'year',
                       'lat', 'lon'),
              sep = ',') |>
     mutate(across(5:10, as.integer),
            across(11:12, as.numeric),
-           timestamp = make_datetime(year, month, day,
+           timestamp = lubridate::make_datetime(year, month, day,
                                      hour, min, sec,
                                      tz = "America/New_York"),
            row_count = row_num - lag(row_num)) |>
@@ -48,21 +47,21 @@ lecs_post_times <- function(df) {
 #' @export
 lecs_met_data <- function(df) {
   df |>
-    filter(type == "M") |>
-    separate(data,
+    dplyr::filter(type == "M") |>
+    tidyr::separate(data,
              into = c('hour', 'min', 'sec',
                       'day', 'month', 'year',
                       'PAR', 'wind_speed', 'wind_dir'),
              sep = ',') |>
-    mutate(wind_dir = str_sub(wind_dir, 1, 6),
+    mutate(wind_dir = stringr::str_sub(wind_dir, 1, 6),
            across(5:10, as.integer),
            across(11:13, as.numeric),
            wind_speed = ifelse(wind_speed < 99, wind_speed, NA),
            wind_dir = ifelse(wind_dir < 360, wind_dir, NA),
-           timestamp = make_datetime(year, month, day,
+           timestamp = lubridate::make_datetime(year, month, day,
                                      hour, min, sec,
                                      tz = "America/New_York")) |>
-    filter(timestamp > "2023-01-01",
+    dplyr::filter(timestamp > "2023-01-01",
            timestamp < "2024-10-01") |>
     select(timestamp, send, PAR, wind_speed, wind_dir)
 }
@@ -75,8 +74,8 @@ lecs_met_data <- function(df) {
 #' @export
 lecs_status_data <- function(df) {
   df |>
-    filter(type == "S") |>
-    separate(data,
+    dplyr::filter(type == "S") |>
+    tidyr::separate(data,
              into = c('hour', 'min', 'sec', 'day', 'month', 'year',
                       'adv_min', 'adv_sec', 'adv_day',
                       'adv_hour', 'adv_year', 'adv_month',
@@ -84,21 +83,20 @@ lecs_status_data <- function(df) {
                       'roll', 'temp',
                       'pump_current', 'pump_voltage', 'pump_power'),
              sep = ',') |>
-    mutate(pump_power = str_sub(pump_power, 1, 5),
-           across(c('hour', 'min', 'day', 'month', 'year',
+    mutate(pump_power = stringr::str_sub(pump_power, 1, 5),
+           dplyr::across(c('hour', 'min', 'day', 'month', 'year',
                   'adv_min', 'adv_day',
                   'adv_hour', 'adv_year', 'adv_month'),
            as.integer),
-           across(c('sec', 'adv_sec',
+           dplyr::across(c('sec', 'adv_sec',
                       'bat', 'soundspeed', 'heading', 'pitch',
                       'roll', 'temp',
                       'pump_current', 'pump_voltage', 'pump_power'), as.numeric),
-           across(c('bat', 'soundspeed', 'heading', 'pitch',
+           dplyr::across(c('bat', 'soundspeed', 'heading', 'pitch',
                       'roll', 'temp') , ~(.x) * .1),
-           timestamp = as.POSIXct(make_datetime(year, month, day, hour, min, sec,
+           timestamp = lubridate::make_datetime(year, month, day, hour, min, sec,
                                      tz = "America/New_York"),
-                                format = '%Y-%m-%d %H:%M:%OS3'),
-           adv_timestamp = make_datetime(adv_year + 2000, adv_month, adv_day,
+           adv_timestamp = lubridate::make_datetime(adv_year + 2000, adv_month, adv_day,
                                          adv_hour, adv_min, adv_sec,
                                          tz = "America/New_York"))
 }
@@ -114,8 +112,8 @@ lecs_status_data <- function(df) {
 #' @export
 lecs_adv_data <- function(df, rinko_cals) {
   df |>
-    filter(type == "D") |>
-    separate(data,
+    dplyr::filter(type == "D") |>
+    tidyr::separate(data,
              into = c('count', 'pressure',
                       'x_vel', 'y_vel', 'z_vel',
                       'x_amp', 'y_amp', 'z_amp',
@@ -123,16 +121,16 @@ lecs_adv_data <- function(df, rinko_cals) {
                       'ana_in', 'ana_in2', 'pH',
                       'temp', 'oxy'),
              sep = ',') |>
-    mutate(oxy = str_sub(oxy, 1, 10),
-           across(6:20, as.numeric),
+    mutate(oxy = stringr::str_sub(oxy, 1, 10),
+           dplyr::across(6:20, as.numeric),
            count = as.integer(count),
            pressure = pressure / 65536 / 1000,
            temp = rinko_cals[["A"]] +
                   temp * rinko_cals[["B"]] +
                   temp ^ 2 * rinko_cals[["C"]] +
                   temp ^ 3 * rinko_cals[["D"]],
-           missing = case_when(line == 1 | count > 255 | lag(count) > 255 ~ NA_integer_,
-                               count > lag(count) ~ count - 1L - lag(count),
-                               TRUE ~ 255L + count - lag(count)
+           missing = dplyr::case_when(line == 1 | count > 255 | dplyr::lag(count) > 255 ~ NA_integer_,
+                               count > dplyr::lag(count) ~ count - 1L - dplyr::lag(count),
+                               TRUE ~ 255L + count - dplyr::lag(count)
                              ))
 }
