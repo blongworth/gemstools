@@ -26,8 +26,8 @@ make_lecs_ts <- function(adv_data, status) {
     tidyr::fill(spread_group) %>%
     dplyr::group_by(spread_group) %>%
     mutate(
-      difftime = (count - count[!is.na(timestamp)]) * 0.0625,
-      timestamp = timestamp[!is.na(timestamp)] + difftime,
+      difftime = (count - count[which.min(is.na(timestamp))]) * 0.0625,
+      timestamp = timestamp[which.min(is.na(timestamp))] + difftime,
     ) %>%
     dplyr::ungroup() |>
     select(-c(boundary, spread_group, difftime))
