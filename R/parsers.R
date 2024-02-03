@@ -1,140 +1,188 @@
-# ADV Status
-#col_types = c(day = 'i', month = 'i', 'year', 'hour', 'min', 'sec', 'error', 'status', 'X9', 'X10', 'X11', 'X12', 'X13', 'X14', 'X15', 'X16'))
-
-#ts_offset <- 671628945
-
-#' Parse ADV status file
+#' Read LECS data from file and parse into dataframes
 #'
-#' @param file ADV .sen status file
-#' @param ts_offset time to add to correct timestamp in seconds
+#' @param file A file path in LECS data format
 #'
-#' @return A data frame of status data
+#' @return a list containing LECS post_times, met data, status data, and ADV data
 #' @export
 #'
-read_adv_status <- function(file, ts_offset = 0) {
-  readr::read_fwf(file) |>
-    dplyr::mutate(across(X1:X6, as.integer),
-      ts = lubridate::make_datetime(year = X3, month = X1, day = X2,
-                              hour = X4, min = X5, sec = X6,
-                              tz = "EDT"),
-           timestamp = ts + ts_offset,
-           bat = X9,
-           temp = X14)
+lecs_parse_file <- function(files) {
+  df <- purrr::map_dfr(files, lecs_read_file, .progress = TRUE)
+  met <- lecs_met_data(df)
+  status <- lecs_status_data(df)
+  adv_data <- lecs_adv_data(df, rinko_cals) |>
+    make_lecs_ts_2(status)
+
+  list(met = met,
+       status = status,
+       adv_data = adv_data)
 }
 
-# concatenate LECS SD data files
-
-#' Read data lines from given file
+#' LECS raw file parser
 #'
-#' @param file file to read
+#' Parse raw files to a df with row_num and type
+#' Remove type chars from beginning of lines
 #'
-read_data <- function(file) {
-   lines <- readLines(file)
-   lines[grep('^D', lines)]
-}
-
-#' Parse ADV Data from MCU SD card files
+#' @param files a vector of file paths
 #'
-#' @param files a list of data files
-#'
-#' @return A data frame of ADV data
+#' @return a dataframe with row_num, type, and unparsed data
 #' @export
-parse_data <- function(files) {
-  data_lines <- purrr::map(files, read_data, .progress = TRUE) |>
-    purrr::reduce(c) |>
-    stringr::str_remove("^D:")
-
-  readr::read_csv(I(data_lines),
-           col_names = c("count", "pressure",
-                         "vx", "vy", "vz",
-                         "a1", "a2", "a3",
-                         "corr1", "corr2", "corr3",
-                         "ana_in", "ana_in2", "pH",
-                         "temp", "DO"))
+#' @importFrom stringr str_sub
+lecs_read_file <- function(file) {
+  l <- readLines(file)
+  type <- str_sub(l, 1, 1)
+  data <- str_sub(l, start = 3)
+  data.frame(row_num = 1:length(l), type = type, data = data)
 }
 
-#' Read met lines from given file
+#' Parse LECS metadata
 #'
-#' @param file file to read
+#' Add row numbers, line type, number and line of send (web data),
 #'
-read_met <- function(file) {
-   lines <- readLines(file)
-   lines[grep('M:', lines)]
-}
-
-#' Parse met Data from MCU SD card files
+#' @param df_raw a raw LECS dataframe
 #'
-#' @param files a list of data files
-#'
-#' @return A data frame of met data
+#' @return a dataframe with added metadata
 #' @export
-parse_met <- function(files) {
-  met_lines <- purrr::map(files, read_met, .progress = TRUE) |>
-    purrr::reduce(c) |>
-    stringr::str_remove("^.*M:")
-
-  readr::read_csv(I(met_lines), col_names = c("hour", "min", "sec", "day", "month", "year",
-                                       "par", "wind_speed", "wind_dir")) |>
-    dplyr::filter(year == 2023) |>
-    dplyr::mutate(timestamp = lubridate::make_datetime(year = year, month = month, day = day,
-                              hour = hour, min = min, sec = sec))
+lecs_add_metadata <- function(df_raw) {
+  df_raw |>
+    mutate(row_num = dplyr::row_number(),
+           type = stringr::str_match(X1, "\\[\\d+\\]([DMS$!]):?")[,2],
+           send = cumsum(type == "$"),
+           line = as.integer(stringr::str_match(X1, "\\[(\\d+)\\][DMS$!]:?")[,2]),
+           data = stringr::str_remove(X1, "\\[\\d+\\][DMS$!]:?")) |>
+    select(row_num, send, type, line, data)
 }
 
-#' Read status lines from given file
+#' parse LECS post times
 #'
-#' @param file file to read
+#' @param df a LECS dataframe with added metadata
 #'
-read_status <- function(file) {
-   lines <- readLines(file)
-   lines[grep('S:', lines)]
-}
-
-#' Parse status Data from MCU SD card files
-#'
-#' @param files a list of data files
-#'
-#' @return A data frame of ADV status data
+#' @return a dataframe of post times
 #' @export
-parse_status <- function(files) {
-  status_lines <- purrr::map(files, read_status, .progress = TRUE) |>
-    purrr::reduce(c) |>
-    stringr::str_remove("^.*S:")
-
-  readr::read_csv(I(status_lines), col_names = c("hour", "min", "sec", "day", "month", "year",
-                                          "adv_min", "adv_sec", "adv_day", "adv_hour", "adv_year", "adv_month",
-                                          "bat", "ss", "head", "pitch", "roll", "temp",
-                                          "empty", "CR", "BV", "PWR")) |>
-    dplyr::filter(year == 2023) |>
-    dplyr::mutate(timestamp = lubridate::make_datetime(year = year, month = month, day = day,
-                              hour = hour, min = min, sec = sec),
-           bat = bat * .1)
+lecs_post_times <- function(df) {
+  df |>
+    dplyr::filter(type == "$") |>
+    tidyr::separate(data,
+             into = c('hour', 'min', 'sec',
+                      'day', 'month', 'year',
+                      'lat', 'lon'),
+             sep = ',') |>
+    mutate(across(c('hour', 'min', 'sec',
+                      'day', 'month', 'year'), as.integer),
+           across(c('lat', 'lon'), as.numeric),
+           timestamp = lubridate::make_datetime(year, month, day,
+                                     hour, min, sec,
+                                     tz = "America/New_York"),
+           row_count = row_num - lag(row_num)) |>
+    select(timestamp, row_count)
 }
 
-#' Read status messages from given file
+#' parse LECS met data
 #'
-#' @param file file to read
+#' @param df a LECS dataframe with added metadata
 #'
-read_statusmsg <- function(file) {
-   lines <- readLines(file)
-   lines[grep('^!', lines)]
-}
-
-
-#' Parse status messages from MCU SD card files
-#'
-#' @param files a list of data files
-#'
-#' @return A data frame of status messages
+#' @return a dataframe of met data
 #' @export
-parse_statusmsg <- function(files) {
-  statusmsg_lines <- purrr::map(files, read_statusmsg, .progress = TRUE) |>
-    purrr::reduce(c) |>
-    stringr::str_remove("^!")
-
-  readr::read_csv(I(statusmsg_lines), col_names = c("hour", "min", "sec", "day", "month", "year", "message")) |>
-    dplyr::filter(year == 2023) |>
-    dplyr::mutate(timestamp = lubridate::make_datetime(year = year, month = month, day = day,
-                              hour = hour, min = min, sec = sec))
+lecs_met_data <- function(df) {
+  df |>
+    dplyr::filter(type == "M") |>
+    tidyr::separate(data,
+             into = c('hour', 'min', 'sec',
+                      'day', 'month', 'year',
+                      'PAR', 'wind_speed', 'wind_dir'),
+             sep = ',') |>
+    mutate(wind_dir = stringr::str_sub(wind_dir, 1, 6),
+           across(c('hour', 'min', 'sec',
+                      'day', 'month', 'year'), as.integer),
+           across(c('PAR', 'wind_speed', 'wind_dir'), as.numeric),
+           wind_speed = ifelse(wind_speed < 99, wind_speed, NA),
+           wind_dir = ifelse(wind_dir < 360, wind_dir, NA),
+           timestamp = lubridate::make_datetime(year, month, day,
+                                     hour, min, sec,
+                                     tz = "America/New_York")) |>
+    dplyr::filter(timestamp > "2023-01-01",
+           timestamp < "2024-10-01") |>
+    select(-row_num, -type, -any_of("line"), -hour, -min, -sec, -day, -month, -year)
 }
 
+#' parse LECS status data
+#'
+#' @param df a LECS dataframe with added metadata
+#'
+#' @return a dataframe of status data
+#' @export
+lecs_status_data <- function(df) {
+  df |>
+    dplyr::filter(type == "S") |>
+    tidyr::separate(data,
+                    into = c('hour', 'min', 'sec', 'day', 'month', 'year',
+                             'adv_min', 'adv_sec', 'adv_day',
+                             'adv_hour', 'adv_year', 'adv_month',
+                             'bat', 'soundspeed', 'heading', 'pitch',
+                             'roll', 'temp',
+                             'pump_current', 'pump_voltage', 'pump_power'),
+                    sep = ',') |>
+    mutate(pump_power = stringr::str_sub(pump_power, 1, 5),
+           dplyr::across(c('hour', 'min', 'day', 'month', 'year',
+                           'adv_min', 'adv_day',
+                           'adv_hour', 'adv_year', 'adv_month'),
+                         as.integer),
+           dplyr::across(c('sec', 'adv_sec',
+                           'bat', 'soundspeed', 'heading', 'pitch',
+                           'roll', 'temp',
+                           'pump_current', 'pump_voltage', 'pump_power'), as.numeric),
+           dplyr::across(c('bat', 'soundspeed', 'heading', 'pitch',
+                           'roll', 'temp') , ~(.x) * .1),
+           timestamp = lubridate::make_datetime(year, month, day, hour, min, sec,
+                                                tz = "America/New_York"),
+           adv_timestamp = lubridate::make_datetime(adv_year + 2000, adv_month, adv_day,
+                                                    adv_hour, adv_min, adv_sec,
+                                                    tz = "America/New_York"))
+}
 
+#' parse LECS ADV data
+#'
+#' Run time alignment after this
+#'
+#' @param df a LECS dataframe with added metadata
+#' @param rinko_cals a list of rinko cal factors (A-D)
+#'
+#' @return a dataframe of ADV data
+#' @export
+lecs_adv_data <- function(df, rinko_cals) {
+  df |>
+    dplyr::filter(type == "D") |>
+    tidyr::separate(data,
+                    into = c('count', 'pressure',
+                             'x_vel', 'y_vel', 'z_vel',
+                             'x_amp', 'y_amp', 'z_amp',
+                             'x_cor', 'y_cor', 'z_cor',
+                             'ana_in', 'ana_in2', 'pH',
+                             'temp', 'oxy'),
+                    sep = ',') |>
+    dplyr::filter(!is.na(count),
+                  count >= 0,
+                  count < 256) %>%
+    mutate(oxy = stringr::str_sub(oxy, 1, 10),
+           dplyr::across(c('pressure',
+                           'temp', 'oxy'),
+                         as.numeric),
+           dplyr::across(c('count',
+                           'x_vel', 'y_vel', 'z_vel',
+                           'x_amp', 'y_amp', 'z_amp',
+                           'x_cor', 'y_cor', 'z_cor',
+                           'ana_in', 'ana_in2', 'pH'),
+                         as.integer),
+           pressure = pressure / 65536 / 1000,
+           temp = rinko_cals[["A"]] +
+             temp * rinko_cals[["B"]] +
+             temp ^ 2 * rinko_cals[["C"]] +
+             temp ^ 3 * rinko_cals[["D"]],
+           missing = dplyr::case_when(count > 255 |
+                                        dplyr::lag(count) > 255 ~ NA_integer_,
+                                      count > dplyr::lag(count) ~ count - 1L - dplyr::lag(count),
+                                      TRUE ~ 255L + count - dplyr::lag(count)),
+           missing = ifelse("line" %in% names(.),
+                            ifelse(line == 1, NA, missing),
+                            missing)
+    )
+}
