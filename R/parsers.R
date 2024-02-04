@@ -1,3 +1,15 @@
+#' Read LECS data from files and parse into dataframes
+#'
+#' @param files A list of file paths containing LECS data
+#'
+#' @return a list containing met data, status data, and ADV data
+#' @export
+lecs_parse_files <- function(files) {
+  purrr::map(files, lecs_parse_file, .progress = TRUE) |>
+    purrr::transpose() |>
+    purrr::map(purrr::list_rbind)
+}
+
 #' Read LECS data from file and parse into dataframes
 #'
 #' @param file A file path in LECS data format
@@ -5,8 +17,8 @@
 #' @return a list containing LECS post_times, met data, status data, and ADV data
 #' @export
 #'
-lecs_parse_file <- function(files) {
-  df <- purrr::map_dfr(files, lecs_read_file, .progress = TRUE)
+lecs_parse_file <- function(file) {
+  df <- lecs_read_file(file)
   met <- lecs_met_data(df)
   status <- lecs_status_data(df)
   adv_data <- lecs_adv_data(df, rinko_cals) |>

@@ -4,7 +4,7 @@
 \alias{lecs_parse_file}
 \title{Read LECS data from file and parse into dataframes}
 \usage{
-lecs_parse_file(files)
+lecs_parse_file(file)
 }
 \arguments{
 \item{file}{A file path in LECS data format}
