@@ -176,13 +176,27 @@ lecs_adv_data <- function(df, rinko_cals) {
            temp = rinko_cals[["A"]] +
              temp * rinko_cals[["B"]] +
              temp ^ 2 * rinko_cals[["C"]] +
-             temp ^ 3 * rinko_cals[["D"]],
-           missing = dplyr::case_when(count > 255 |
-                                        dplyr::lag(count) > 255 ~ NA_integer_,
-                                      count > dplyr::lag(count) ~ count - 1L - dplyr::lag(count),
-                                      TRUE ~ 255L + count - dplyr::lag(count)),
-           missing = ifelse("line" %in% names(.),
-                            ifelse(line == 1, NA, missing),
-                            missing)
+             temp ^ 3 * rinko_cals[["D"]]
     )
+}
+
+#' Calculate number of missing lines
+#'
+#' @param count Vector of ADV count
+#' @param line vector indicating line of send
+#'
+#' @return A vector with a guess at the number of missing lines from
+#' previous to current
+#' @export
+lecs_missing <- function(count, line = NULL) {
+  missing <-  dplyr::case_when(count > 255 | dplyr::lag(count) > 255 ~
+                                 NA_integer_,
+                               count > dplyr::lag(count) ~
+                                 count - 1L - dplyr::lag(count),
+                               TRUE ~
+                                 255L + count - dplyr::lag(count))
+  if (!is.null(line)) {
+    missing = replace(missing, line == 1, NA)
+  }
+  missing
 }

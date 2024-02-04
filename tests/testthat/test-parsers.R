@@ -20,3 +20,19 @@ test_that("Parsing Data works", {
   adv <- lecs_adv_data(df, rinko_cals)
   expect_true(is.data.frame(adv))
 })
+
+test_that("Missing rows calculated correctly for files", {
+  df <- lecs_read_file(test_path("test_file.txt"))
+  adv <- lecs_adv_data(df, rinko_cals)
+  missing <- lecs_missing(adv$count)
+  expect_true(is.integer(missing))
+  expect_true(is.na(missing[1]))
+})
+
+test_that("Missing rows calculated correctly for web sends", {
+  adv <- readRDS(test_path("lecs_data.rds"))
+  missing <- lecs_missing(adv$count, adv$line)
+  expect_true(is.integer(missing))
+  expect_true(is.na(missing[1]))
+  expect_true(is.na(missing[467]))
+})
