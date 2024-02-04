@@ -10,6 +10,18 @@ lecs_parse_files <- function(files) {
     purrr::map(purrr::list_rbind)
 }
 
+#' Parallelized Read LECS data from files and parse into dataframes
+#'
+#' @param files A list of file paths containing LECS data
+#'
+#' @return a list containing met data, status data, and ADV data
+#' @export
+lecs_parse_files_p <- function(files) {
+  furrr::future_map(files, lecs_parse_file, .progress = TRUE) |>
+    purrr::transpose() |>
+    furrr::future_map(purrr::list_rbind)
+}
+
 #' Read LECS data from file and parse into dataframes
 #'
 #' @param file A file path in LECS data format
@@ -160,6 +172,7 @@ lecs_status_data <- function(df) {
 #'
 #' @return a dataframe of ADV data
 #' @export
+#' @importFrom magrittr %>%
 lecs_adv_data <- function(df, rinko_cals) {
   df |>
     dplyr::filter(type == "D") |>
