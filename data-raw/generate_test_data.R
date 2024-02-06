@@ -22,3 +22,17 @@ adv_data <- lecs_adv_data(df, rinko_cals)
 saveRDS(df, test_path("lecs_web.rds"))
 saveRDS(status, test_path("lecs_status.rds"))
 saveRDS(adv_data, test_path("lecs_data.rds"))
+
+r4ds_test <- adv_data |>
+  select(row_num, type, count) |>
+  mutate(timestamp = as.POSIXct(NA)) |>
+  dplyr::bind_rows(select(status, row_num, type, timestamp)) |>
+  dplyr::arrange(row_num)
+
+test_df <- test_ts |>
+  select(row_num, type, count, timestamp) |>
+  dplyr::bind_rows(select(status, row_num, type, timestamp)) |>
+  dplyr::arrange(row_num)
+saveRDS(r4ds_test, test_path("test_data_r4ds.rds"))
+
+ts <-
