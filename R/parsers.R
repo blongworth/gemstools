@@ -1,3 +1,62 @@
+# Make list of all files
+
+#' Process all LECS files in a dated folder
+#'
+#' @param date A date to use for constructing output filenames and default file path
+#' @param file_dir An optional directory to use instead of the default
+#' @param out_dir An optional directory to use instead of the default
+#' @param dedupe Set TRUE to remove lines with duplicate timestamps
+#' @param resample Set to "second", "minute", etc. to output downsampled data
+#'
+#' @export
+lecs_process_data <- function(date, file_dir = NULL, out_dir = NULL,
+                              dedupe = FALSE, resample = FALSE) {
+  if (is.null(file_dir)) {
+    file_dir <- paste0("data/SD Card Data/LECS_surface_sd/lecs_surface_", date)
+  }
+  if (is.null(out_dir)) {
+    out_dir <- ""
+  }
+
+  files <- list.files(file_dir, pattern = "^202[3|4]", full.names = TRUE)
+  message(paste(length(files), "files to process"))
+
+  # Process files into a list containing data frames for ADV, status, and Met
+
+  future::plan(future::multicore)
+
+  tictoc::tic("Time to read and process data: ")
+  lecs_data <- lecs_parse_files_p(files)
+  message(tictoc::toc())
+  tictoc::tic("Time to write csvs: ")
+  data.table::fwrite(lecs_data[["met"]], paste0(out_dir, "lecs_met_", date, ".csv"))
+  data.table::fwrite(lecs_data[["status"]], paste0(out_dir, "lecs_status_", date, ".csv"))
+  data.table::fwrite(lecs_data[["adv_data"]], paste0(out_dir, "lecs_adv_data_", date, ".csv"))
+  message(tictoc::toc())
+
+  if (dedupe) {
+    tictoc::tic("Time to write deduped csv: ")
+    attach(lecs_data)
+    adv_data |>
+      dplyr::distinct(timestamp, .keep_all = TRUE) |>
+      data.table::fwrite(paste0(out_dir, "lecs_adv_data_nodup_", date, ".csv"))
+    message(tictoc::toc())
+  }
+
+  if (resample) {
+    tictoc::tic("Time to write resampled csv: ")
+    attach(lecs_data)
+    adv_data |>
+      dplyr::group_by(clock::date_group(timestamp, resample)) |>
+      dplyr::summarise(dplyr::across(dplyr::everything(),
+                       ~ mean(.x, na.rm = TRUE))) |>
+      data.table::fwrite(paste0(out_dir, "lecs_adv_data_", resample, "_", date, ".csv"))
+    message(tictoc::toc())
+
+  }
+
+}
+
 #' Read LECS data from files and parse into dataframes
 #'
 #' @param files A list of file paths containing LECS data
@@ -6,8 +65,7 @@
 #' @export
 lecs_parse_files <- function(files) {
   purrr::map(files, lecs_parse_file, .progress = TRUE) |>
-    purrr::transpose() |>
-    purrr::map(purrr::list_rbind)
+    simplify2array() |> apply(1, purrr::list_rbind)
 }
 
 #' Parallelized Read LECS data from files and parse into dataframes
@@ -178,30 +236,35 @@ lecs_adv_data <- function(df, rinko_cals) {
     dplyr::filter(type == "D") |>
     tidyr::separate(data,
                     into = c('count', 'pressure',
-                             'x_vel', 'y_vel', 'z_vel',
-                             'x_amp', 'y_amp', 'z_amp',
-                             'x_cor', 'y_cor', 'z_cor',
-                             'ana_in', 'ana_in2', 'pH',
-                             'temp', 'oxy'),
+                             'u', 'v', 'w',
+                             'amp1', 'amp2', 'amp3',
+                             'corr1', 'corr2', 'corr3',
+                             'ana_in', 'ana_in2', 'ph_counts',
+                             'temp', 'DO'),
                     sep = ',') |>
     dplyr::filter(!is.na(count),
                   count >= 0,
                   count < 256) %>%
-    mutate(oxy = stringr::str_sub(oxy, 1, 10),
+    mutate(DO = stringr::str_sub(DO, 1, 10),
            dplyr::across(c('pressure',
-                           'temp', 'oxy'),
+                           'temp', 'DO'),
                          as.numeric),
            dplyr::across(c('count',
-                           'x_vel', 'y_vel', 'z_vel',
-                           'x_amp', 'y_amp', 'z_amp',
-                           'x_cor', 'y_cor', 'z_cor',
-                           'ana_in', 'ana_in2', 'pH'),
+                             'u', 'v', 'w',
+                             'amp1', 'amp2', 'amp3',
+                             'corr1', 'corr2', 'corr3',
+                           'ana_in', 'ana_in2', 'ph_counts'),
                          as.integer),
+           dplyr::across(c('u', 'v', 'w'), ~(.x) * .001),
            pressure = pressure / 65536 / 1000,
-           temp = rinko_cals[["A"]] +
-             temp * rinko_cals[["B"]] +
-             temp ^ 2 * rinko_cals[["C"]] +
-             temp ^ 3 * rinko_cals[["D"]]
+           temp = rinko_cals[["temp_A"]] +
+             temp * rinko_cals[["temp_B"]] +
+             temp ^ 2 * rinko_cals[["temp_C"]] +
+             temp ^ 3 * rinko_cals[["temp_D"]],
+           DO_percent = (( rinko_cals[["o2_A"]]) /( 1 + rinko_cals[["o2_D"]]*(temp-25))) +
+            ((rinko_cals[["o2_B"]]) / ((DO - rinko_cals[["o2_F"]])*(1+ rinko_cals[["o2_D"]]*(temp-25)) +
+             rinko_cals[["o2_C"]] + rinko_cals[["o2_F"]])) * rinko_cals[["o2_H"]] +
+              rinko_cals[["o2_G"]]
     )
 }
 
