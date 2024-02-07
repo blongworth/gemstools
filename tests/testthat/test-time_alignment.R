@@ -106,5 +106,6 @@ test_that("make_lecs_ts_2() works for 40 lines of data", {
   adv_data <- lecs_adv_data(df, rinko_cals)
   adv_data_ts <- make_lecs_ts_2(adv_data, status) |>
     select(row_num, count, timestamp)
+  expect_false(any(duplicated(adv_data_ts$timestamp)))
   expect_identical(adv_data_ts, adv_ts_40)
 })
