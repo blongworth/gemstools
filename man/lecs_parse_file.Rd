@@ -4,10 +4,12 @@
 \alias{lecs_parse_file}
 \title{Read LECS data from file and parse into dataframes}
 \usage{
-lecs_parse_file(file)
+lecs_parse_file(file, clean = FALSE)
 }
 \arguments{
 \item{file}{A file path in LECS data format}
+
+\item{filter}{Filter bad data and timestamps if true}
 }
 \value{
 a list containing LECS post_times, met data, status data, and ADV data

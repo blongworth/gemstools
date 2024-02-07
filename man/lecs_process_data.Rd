@@ -7,9 +7,12 @@
 lecs_process_data(
   date,
   file_dir = NULL,
-  out_dir = NULL,
+  out_dir = "",
+  clean = TRUE,
   dedupe = FALSE,
-  resample = FALSE
+  resample = FALSE,
+  csv = TRUE,
+  parquet = TRUE
 )
 }
 \arguments{
@@ -19,9 +22,15 @@ lecs_process_data(
 
 \item{out_dir}{An optional directory to use instead of the default}
 
+\item{clean}{Set TRUE to remove bad data and timestamps}
+
 \item{dedupe}{Set TRUE to remove lines with duplicate timestamps}
 
 \item{resample}{Set to "second", "minute", etc. to output downsampled data}
+
+\item{csv}{Set TRUE to write csv data}
+
+\item{parquet}{Set TRUE to write parquet (Arrow) data}
 }
 \description{
 Process all LECS files in a dated folder

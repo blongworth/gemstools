@@ -5,17 +5,24 @@
 #' @param date A date to use for constructing output filenames and default file path
 #' @param file_dir An optional directory to use instead of the default
 #' @param out_dir An optional directory to use instead of the default
+#' @param clean Set TRUE to remove bad data and timestamps
 #' @param dedupe Set TRUE to remove lines with duplicate timestamps
 #' @param resample Set to "second", "minute", etc. to output downsampled data
+#' @param csv Set TRUE to write csv data
+#' @param parquet Set TRUE to write parquet (Arrow) data
 #'
 #' @export
-lecs_process_data <- function(date, file_dir = NULL, out_dir = NULL,
-                              dedupe = FALSE, resample = FALSE) {
+lecs_process_data <- function(date,
+                              file_dir = NULL,
+                              out_dir = "",
+                              clean = TRUE,
+                              dedupe = FALSE,
+                              resample = FALSE,
+                              csv = TRUE,
+                              parquet = TRUE
+                              ) {
   if (is.null(file_dir)) {
     file_dir <- paste0("data/SD Card Data/LECS_surface_sd/lecs_surface_", date)
-  }
-  if (is.null(out_dir)) {
-    out_dir <- ""
   }
 
   files <- list.files(file_dir, pattern = "^202[3|4]", full.names = TRUE)
@@ -28,33 +35,42 @@ lecs_process_data <- function(date, file_dir = NULL, out_dir = NULL,
   tictoc::tic("Time to read and process data: ")
   lecs_data <- lecs_parse_files_p(files)
   message(tictoc::toc())
-  tictoc::tic("Time to write csvs: ")
-  data.table::fwrite(lecs_data[["met"]], paste0(out_dir, "lecs_met_", date, ".csv"))
-  data.table::fwrite(lecs_data[["status"]], paste0(out_dir, "lecs_status_", date, ".csv"))
-  data.table::fwrite(lecs_data[["adv_data"]], paste0(out_dir, "lecs_adv_data_", date, ".csv"))
-  message(tictoc::toc())
+
+  attach(lecs_data)
 
   if (dedupe) {
-    tictoc::tic("Time to write deduped csv: ")
-    attach(lecs_data)
-    adv_data |>
-      dplyr::distinct(timestamp, .keep_all = TRUE) |>
-      data.table::fwrite(paste0(out_dir, "lecs_adv_data_nodup_", date, ".csv"))
-    message(tictoc::toc())
+    adv_data <- adv_data |>
+      dplyr::distinct(timestamp, .keep_all = TRUE)
   }
 
   if (resample) {
-    tictoc::tic("Time to write resampled csv: ")
-    attach(lecs_data)
-    adv_data |>
+    adv_data <- adv_data |>
       dplyr::group_by(clock::date_group(timestamp, resample)) |>
       dplyr::summarise(dplyr::across(dplyr::everything(),
-                       ~ mean(.x, na.rm = TRUE))) |>
-      data.table::fwrite(paste0(out_dir, "lecs_adv_data_", resample, "_", date, ".csv"))
-    message(tictoc::toc())
-
+                       ~ mean(.x, na.rm = TRUE)))
   }
 
+  if (clean) {
+    met <- lecs_clean_met(met)
+    status <- lecs_clean_status(status)
+    adv_data <- lecs_clean_adv_data(adv_data)
+  }
+
+  if (csv) {
+    tictoc::tic("Time to write csvs: ")
+    data.table::fwrite(met, paste0(out_dir, "lecs_met_", date, ".csv"))
+    data.table::fwrite(status, paste0(out_dir, "lecs_status_", date, ".csv"))
+    data.table::fwrite(adv_data, paste0(out_dir, "lecs_adv_data_", date, ".csv"))
+    message(tictoc::toc())
+  }
+
+  if (parquet) {
+    tictoc::tic("Time to write parquet: ")
+    met |> arrow::arrow_table() |> arrow::write_dataset(paste0(out_dir, "lecs_met_", date, ".parquet"))
+    status |> arrow::arrow_table() |> arrow::write_dataset(paste0(out_dir, "lecs_status_", date, ".parquet"))
+    adv_data |> arrow::arrow_table() |> arrow::write_dataset(paste0(out_dir, "lecs_adv_data_", date, ".parquet"))
+    message(tictoc::toc())
+  }
 }
 
 #' Read LECS data from files and parse into dataframes
@@ -83,16 +99,23 @@ lecs_parse_files_p <- function(files) {
 #' Read LECS data from file and parse into dataframes
 #'
 #' @param file A file path in LECS data format
+#' @param filter Filter bad data and timestamps if true
 #'
 #' @return a list containing LECS post_times, met data, status data, and ADV data
 #' @export
 #'
-lecs_parse_file <- function(file) {
+lecs_parse_file <- function(file, clean = FALSE) {
   df <- lecs_read_file(file)
   met <- lecs_met_data(df)
   status <- lecs_status_data(df)
   adv_data <- lecs_adv_data(df, rinko_cals) |>
     make_lecs_ts_2(status)
+
+  if (filter) {
+    met <- lecs_clean_met(met)
+    status <- lecs_clean_status(status)
+    adv_data <- lecs_clean_adv_data(adv_data)
+  }
 
   list(met = met,
        status = status,
@@ -181,9 +204,19 @@ lecs_met_data <- function(df) {
            timestamp = lubridate::make_datetime(year, month, day,
                                      hour, min, sec,
                                      tz = "America/New_York")) |>
-    dplyr::filter(timestamp > "2023-01-01",
-           timestamp < "2024-10-01") |>
     select(-row_num, -type, -any_of("line"), -hour, -min, -sec, -day, -month, -year)
+}
+
+#' Clean met data
+#'
+#' @param met
+#'
+#' @export
+lecs_clean_met <- function(met) {
+  met |>
+    filter(timestamp <= "2024-03-01",
+           #timestamp <= as.POSIXct(Sys.Date()),
+           timestamp > "2023-01-01")
 }
 
 #' parse LECS status data
@@ -219,6 +252,24 @@ lecs_status_data <- function(df) {
            adv_timestamp = lubridate::make_datetime(adv_year + 2000, adv_month, adv_day,
                                                     adv_hour, adv_min, adv_sec,
                                                     tz = "America/New_York"))
+}
+
+#' Clean status data
+#'
+#' @param status
+#'
+#' @export
+lecs_clean_status <- function(status) {
+  status |>
+    filter(timestamp <= "2024-03-01",
+           #timestamp <= Sys.Date(),
+           timestamp > "2023-01-01",
+           soundspeed > 1450,
+           adv_day < 32, adv_month > 0, adv_month < 13,
+           adv_min < 61, adv_hour < 24, adv_year < 100) |>
+    select(time = timestamp, adv_time = adv_timestamp,
+           bat, soundspeed, heading, pitch, roll, temp,
+           pump_current, pump_voltage, pump_power)
 }
 
 #' parse LECS ADV data
@@ -266,6 +317,23 @@ lecs_adv_data <- function(df, rinko_cals) {
              rinko_cals[["o2_C"]] + rinko_cals[["o2_F"]])) * rinko_cals[["o2_H"]] +
               rinko_cals[["o2_G"]]
     )
+}
+
+#' Clean adv data
+#'
+#' @param adv
+#'
+#' @export
+lecs_clean_adv_data <- function(adv) {
+  adv |>
+    filter(timestamp <= "2024-03-01",
+           #timestamp <= Sys.Date(),
+           timestamp > "2023-01-01",
+           ana_in2 == 1,
+           ph_counts < 15000,
+           ph_counts > 5000) |>
+    select(time = timestamp, count, pressure, u, v, w, amp1, amp2, amp3,
+           corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO, DO_percent)
 }
 
 #' Calculate number of missing lines
