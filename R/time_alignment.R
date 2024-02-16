@@ -62,15 +62,20 @@ make_lecs_ts_2 <- function(adv_data, status) {
     tidyr::fill(count2, .direction = "updown") |>
     mutate(
       count2 = count2 + 256*cumsum(c(FALSE, diff(count2) < 0)),
+      boundary = c(TRUE, abs(diff(count2)) > 3), # tol = 3
+      spread_group = cumsum(boundary)
+    ) |>
+    dplyr::group_by(spread_group) |>
+    mutate(
       nextind = dplyr::if_else(is.na(timestamp), count2[NA], count2),
-      prevind = nextind
+      prevind = nextind,
     ) |>
     tidyr::fill(prevtime, prevind, .direction = "down") |>
     tidyr::fill(nexttime, nextind, .direction = "up") |>
     mutate(
       newtimestamp = dplyr::case_when(
         !is.na(timestamp) ~ timestamp,
-        is.na(prevtime) | abs(count2 - nextind) < abs(count2 - prevind) ~
+        is.na(prevtime) | count2 - dplyr::lag(count2) > 2 ~
           nexttime + (count2 - nextind)/16,
         TRUE ~
           prevtime + (count2 - prevind)/16
