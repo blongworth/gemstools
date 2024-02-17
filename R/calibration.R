@@ -44,6 +44,14 @@ generate_ph_model <- function(seaphox_data, adv_data) {
 fit_ph_model <- function(ph_counts, temp, ph_fit) {
   ph_fit[1] + ph_fit[2]*ph_counts + ph_fit[3]*temp
 }
+
+
+#' Read seaphox data
+#'
+#' @param file seaphox file path
+#'
+#' @return a dataframe of seaphox data
+#' @export
 read_seaphox <- function(file) {
   data.table::fread(file) |>
     janitor::clean_names() |>
