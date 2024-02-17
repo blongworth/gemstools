@@ -2,14 +2,7 @@ library(tidyverse)
 library(mlabtools)
 library(testthat)
 
-# RINKO_CALS
-rinko_cals <- list(
-  A = -1.219367e1,
-  B = 2.134089e1,
-  C = -3.559172e00,
-  D = 6.691104e-01
-)
-
+# lecs data
 df_raw <- read_lecs_web(start_date = "2024-01-25")
 df <- lecs_add_metadata(df_raw) |>
   filter(send %in% 1:2)
@@ -23,6 +16,9 @@ saveRDS(df, test_path("lecs_web.rds"))
 saveRDS(status, test_path("lecs_status.rds"))
 saveRDS(adv_data, test_path("lecs_data.rds"))
 
+# test data for r4ds/SO time alignment q
+# no longer needed
+
 r4ds_test <- adv_data |>
   select(row_num, type, count) |>
   mutate(timestamp = as.POSIXct(NA)) |>
@@ -35,4 +31,7 @@ test_df <- test_ts |>
   dplyr::arrange(row_num)
 saveRDS(r4ds_test, test_path("test_data_r4ds.rds"))
 
-ts <-
+# need to add generators for test_file.txt, adv_ts_21.rds, and adv_ts_40.rds
+
+# seaphox data is part of a seaphox file
+
