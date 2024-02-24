@@ -9,27 +9,35 @@
 #' @return A named vector of lm coefficents
 #' @export
 #' @import data.table
-generate_ph_model <- function(seaphox_data, adv_data) {
+generate_ph_model <- function(seaphox_data, lecs_data) {
   # extract lecs data from seaphox deployment time
-  adv_data_filt <- adv_data |>
+  lecs_data_filt <- lecs_data |>
     select(time, temp, ph_counts) |>
     filter(time > min(seaphox_data$time),
-           time < max(seaphox_data$time))
+           time < max(seaphox_data$time)) |>
+    dplyr::collect()
 
   # aggregate seaphox to nearest minute
-
   sp_m <- seaphox_data %>%
-    dplyr::group_by(clock::date_group(time, "minute")) |>
-    dplyr::summarise(time = mean(time),
-                     pH = mean(pH),
-                     temp = mean(temp))
+    mutate(time = clock::date_group(time, "minute")) |>
+    dplyr::group_by(time) |>
+    dplyr::summarise(seaphox_ph = mean(pH),
+                     seaphox_temp = mean(temp))
 
-  joined_data <- data.table(adv_data_filt)[data.table(sp_m),
-                                            on = .(time),
-                                            roll = TRUE]
+  # aggregate lecs to nearest minute
+  lecs_m <- lecs_data_filt  %>%
+    mutate(time = clock::date_group(time, "minute")) |>
+    dplyr::group_by(time) |>
+    dplyr::summarise(lecs_ph_counts = mean(ph_counts),
+                     lecs_temp = mean(temp))
 
+  joined_data <- dplyr::inner_join(sp_m, lecs_m)
+  # rolling join to combine lecs and seaphox data
+  # joined_data <- data.table(adv_data_filt)[data.table(sp_m),
+  #                                           on = .(time),
+  #                                           roll = TRUE]
 
-  ph_lm <- lm(pH ~ ph_counts + temp, data = joined_data)
+  ph_lm <- lm(seaphox_ph ~ lecs_ph_counts + lecs_temp, data = joined_data)
   coef(ph_lm)
 }
 

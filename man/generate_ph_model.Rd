@@ -4,7 +4,7 @@
 \alias{generate_ph_model}
 \title{Fit a ph model to the given data and return coefficients}
 \usage{
-generate_ph_model(seaphox_data, adv_data)
+generate_ph_model(seaphox_data, lecs_data)
 }
 \arguments{
 \item{seaphox_data}{a seaphox dataframe}
