@@ -15,5 +15,5 @@ make_lecs_ts(adv_data, status)
 ADV data with timestamps added
 }
 \description{
-Dplyr version from June Choe (github.com/yjunechoe)
+Version from R2evans on stack overflow
 }

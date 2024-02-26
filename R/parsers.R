@@ -109,7 +109,7 @@ lecs_parse_file <- function(file, clean = FALSE) {
   met <- lecs_met_data(df)
   status <- lecs_status_data(df)
   adv_data <- lecs_adv_data(df, rinko_cals) |>
-    make_lecs_ts_2(status)
+    make_lecs_ts(status)
 
   if (clean) {
     met <- lecs_clean_met(met)
