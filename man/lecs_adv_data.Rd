@@ -9,7 +9,7 @@ lecs_adv_data(df, rinko_cals)
 \arguments{
 \item{df}{a LECS dataframe with added metadata}
 
-\item{rinko_cals}{a list of rinko cal factors (A-D)}
+\item{rinko_cals}{a list of rinko cal factors for temp and O2}
 }
 \value{
 a dataframe of ADV data

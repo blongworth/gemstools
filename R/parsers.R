@@ -99,7 +99,7 @@ lecs_parse_files_p <- function(files) {
 #' Read LECS data from file and parse into dataframes
 #'
 #' @param file A file path in LECS data format
-#' @param filter Filter bad data and timestamps if true
+#' @param clean Filter bad data and timestamps if true
 #'
 #' @return a list containing LECS post_times, met data, status data, and ADV data
 #' @export
@@ -277,7 +277,7 @@ lecs_clean_status <- function(status) {
 #' Run time alignment after this
 #'
 #' @param df a LECS dataframe with added metadata
-#' @param rinko_cals a list of rinko cal factors (A-D)
+#' @param rinko_cals a list of rinko cal factors for temp and O2
 #'
 #' @return a dataframe of ADV data
 #' @export
