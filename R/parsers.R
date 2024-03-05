@@ -283,7 +283,7 @@ lecs_clean_status <- function(status) {
 #' @export
 #' @importFrom magrittr %>%
 lecs_adv_data <- function(df, rinko_cals) {
-  df |>
+test <-   df |>
     dplyr::filter(type == "D") |>
     tidyr::separate(data,
                     into = c('count', 'pressure',
@@ -293,9 +293,6 @@ lecs_adv_data <- function(df, rinko_cals) {
                              'ana_in', 'ana_in2', 'ph_counts',
                              'temp', 'DO'),
                     sep = ',') |>
-    dplyr::filter(!is.na(count),
-                  count >= 0,
-                  count < 256) %>%
     mutate(DO = stringr::str_sub(DO, 1, 10),
            dplyr::across(c('pressure',
                            'temp', 'DO'),
@@ -326,10 +323,13 @@ lecs_adv_data <- function(df, rinko_cals) {
 #' @export
 lecs_clean_adv_data <- function(adv) {
   adv |>
-    filter(timestamp <= "2024-03-01",
+    filter(timestamp <= "2024-04-01",
            #timestamp <= Sys.Date(),
            timestamp > "2023-01-01",
-           ana_in2 == 1,
+           !is.na(count),
+           count >= 0,
+           count < 256,
+           #ana_in2 == 1,
            ph_counts < 15000,
            ph_counts > 5000) |>
     select(time = timestamp, count, pressure, u, v, w, amp1, amp2, amp3,
