@@ -312,7 +312,9 @@ test <-   df |>
            DO_percent = (( rinko_cals[["o2_A"]]) /( 1 + rinko_cals[["o2_D"]]*(temp-25))) +
             ((rinko_cals[["o2_B"]]) / ((DO - rinko_cals[["o2_F"]])*(1+ rinko_cals[["o2_D"]]*(temp-25)) +
              rinko_cals[["o2_C"]] + rinko_cals[["o2_F"]])) * rinko_cals[["o2_H"]] +
-              rinko_cals[["o2_G"]]
+              rinko_cals[["o2_G"]],
+           pH = ph_cals[["int"]] + ph_cals[["ph"]] * ph_counts + ph_cals[["temp"]] * temp
+
     )
 }
 
@@ -333,7 +335,7 @@ lecs_clean_adv_data <- function(adv) {
            ph_counts < 15000,
            ph_counts > 5000) |>
     select(time = timestamp, count, pressure, u, v, w, amp1, amp2, amp3,
-           corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO, DO_percent)
+           corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO, DO_percent, pH)
 }
 
 #' Calculate number of missing lines
