@@ -1,6 +1,6 @@
 # ph cals
 # Cal from January SeapHOx cal
-ph_cals <- list(
+ph_cals <- c(
   int = 7.17,
   ph = 0.00011,
   temp = 0.00074
@@ -8,7 +8,7 @@ ph_cals <- list(
 
 # RINKO_CALS
 # G & H from 2024-03-05 lab cal, SN 0472
-rinko_cals <- list(
+rinko_cals <- c(
   temp_A = -1.219367e1,
   temp_B = 2.134089e1,
   temp_C = -3.559172e00,

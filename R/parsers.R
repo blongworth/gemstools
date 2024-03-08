@@ -304,16 +304,10 @@ test <-   df |>
                            'ana_in', 'ana_in2', 'ph_counts'),
                          as.integer),
            dplyr::across(c('u', 'v', 'w'), ~(.x) * .001),
-           pressure = pressure / 65536 / 1000,
-           temp = rinko_cals[["temp_A"]] +
-             temp * rinko_cals[["temp_B"]] +
-             temp ^ 2 * rinko_cals[["temp_C"]] +
-             temp ^ 3 * rinko_cals[["temp_D"]],
-           DO_percent = (( rinko_cals[["o2_A"]]) /( 1 + rinko_cals[["o2_D"]]*(temp-25))) +
-            ((rinko_cals[["o2_B"]]) / ((DO - rinko_cals[["o2_F"]])*(1+ rinko_cals[["o2_D"]]*(temp-25)) +
-             rinko_cals[["o2_C"]] + rinko_cals[["o2_F"]])) * rinko_cals[["o2_H"]] +
-              rinko_cals[["o2_G"]],
-           pH = ph_cals[["int"]] + ph_cals[["ph"]] * ph_counts + ph_cals[["temp"]] * temp
+           pressure = pressure / 65536 / 1000, # fix bad pressure data - use only bottom int16
+           temp = cal_temp(temp, rinko_cals),
+           DO_percent = cal_ox(DO, temp, rinko_cals),
+           pH = cal_ph(ph_counts, temp, ph_cals)
 
     )
 }
@@ -357,4 +351,23 @@ lecs_missing <- function(count, line = NULL) {
     missing = replace(missing, line == 1, NA)
   }
   missing
+}
+
+#' Read seaphox data
+#'
+#' @param file seaphox file path
+#'
+#' @return a dataframe of seaphox data
+#' @export
+read_seaphox <- function(file) {
+  data.table::fread(file) |>
+    janitor::clean_names() |>
+    mutate(time = lubridate::mdy_hms(date_time_utc_04_00,
+                          tz = "UTC")) |>
+    select(time,
+           pH = internal_p_h_p_h,
+           temp = p_h_temperature_celsius,
+           pressure = pressure_decibar,
+           sal = salinity_psu,
+           oxygen = oxygen_ml_l)
 }
