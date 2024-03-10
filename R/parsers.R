@@ -264,7 +264,7 @@ lecs_clean_status <- function(status) {
     filter(timestamp <= "2024-03-01",
            #timestamp <= Sys.Date(),
            timestamp > "2023-01-01",
-           soundspeed > 1450,
+           #soundspeed > 1450,
            adv_day < 32, adv_month > 0, adv_month < 13,
            adv_min < 61, adv_hour < 24, adv_year < 100) |>
     select(time = timestamp, adv_time = adv_timestamp,
@@ -326,8 +326,9 @@ lecs_clean_adv_data <- function(adv) {
            count >= 0,
            count < 256,
            #ana_in2 == 1,
-           ph_counts < 15000,
-           ph_counts > 5000) |>
+           #ph_counts < 15000,
+           #ph_counts > 5000,
+           ) |>
     select(time = timestamp, count, pressure, u, v, w, amp1, amp2, amp3,
            corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO, DO_percent, pH)
 }
