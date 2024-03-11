@@ -1,0 +1,142 @@
+# Functions for processing raw LECS data
+
+#' Process all LECS files in a dated folder
+#'
+#' @param date A date to use for constructing output filenames and default file path
+#' @param file_dir An optional directory to use instead of the default
+#' @param files An optional list of files to process. Supersedes `date` and
+#' `file_dir` for generating file list
+#' @param out_dir An optional directory to use instead of the default
+#' @param clean Set TRUE to remove bad data and timestamps
+#' @param dedupe Set TRUE to remove lines with duplicate timestamps
+#' @param resample Set to "second", "minute", etc. to output downsampled data
+#' @param csv Set TRUE to write csv data
+#' @param parquet Set TRUE to write parquet (Arrow) data
+#'
+#' @export
+lecs_process_data <- function(date = NULL,
+                              file_dir = NULL,
+                              files = NULL,
+                              out_dir = "",
+                              clean = TRUE,
+                              dedupe = FALSE,
+                              resample = FALSE,
+                              csv = TRUE,
+                              parquet = TRUE
+                              ) {
+  if ( is.null(c(date, file_dir, files)) ) {
+    stop("Provide a date, file_dir, or a list of files to process.")
+  }
+
+  if (is.null(file_dir)) {
+    file_dir <- paste0("data/SD Card Data/LECS_surface_sd/lecs_surface_", date)
+  }
+
+  if (is.null(files)) {
+    files <- list.files(file_dir, pattern = "^202[3|4]", full.names = TRUE)
+  }
+
+  message(paste(length(files), "files to process"))
+
+  # Process files into a list containing data frames for ADV, status, and Met
+
+  future::plan(future::multicore)
+
+  tictoc::tic("Time to read and process data: ")
+  lecs_data <- lecs_parse_files_p(files, clean)
+  message(tictoc::toc())
+
+  attach(lecs_data)
+
+  if (dedupe) {
+    adv_data <- adv_data |>
+      dplyr::distinct(timestamp, .keep_all = TRUE)
+  }
+
+  if (resample) {
+    adv_data <- adv_data |>
+      dplyr::group_by(clock::date_group(timestamp, resample)) |>
+      dplyr::summarise(dplyr::across(dplyr::everything(),
+                       ~ mean(.x, na.rm = TRUE)))
+  }
+
+  #if (clean) {
+  #  met <- lecs_clean_met(met)
+  #  status <- lecs_clean_status(status)
+  #  adv_data <- lecs_clean_adv_data(adv_data)
+  #}
+
+  if (csv) {
+    tictoc::tic("Time to write csvs: ")
+    data.table::fwrite(met, paste0(out_dir, "lecs_met_", date, ".csv"))
+    data.table::fwrite(status, paste0(out_dir, "lecs_status_", date, ".csv"))
+    data.table::fwrite(adv_data, paste0(out_dir, "lecs_adv_data_", date, ".csv"))
+    message(tictoc::toc())
+  }
+
+  if (parquet) {
+    tictoc::tic("Time to write parquet: ")
+    met |>
+      arrow::arrow_table() |>
+      group_by(year, month) |>
+      arrow::write_dataset(paste0(out_dir, "lecs_met_", date, ".parquet"))
+    status |>
+      arrow::arrow_table() |>
+      group_by(year, month) |>
+      arrow::write_dataset(paste0(out_dir, "lecs_status_", date, ".parquet"))
+    adv_data |>
+      arrow::arrow_table() |>
+      group_by(year, month) |>
+      arrow::write_dataset(paste0(out_dir, "lecs_adv_data_", date, ".parquet"))
+    message(tictoc::toc())
+  }
+}
+
+#' Read LECS data from files and parse into dataframes
+#'
+#' @param files A list of file paths containing LECS data
+#'
+#' @return a list containing met data, status data, and ADV data
+#' @export
+lecs_parse_files <- function(files) {
+  purrr::map(files, lecs_parse_file, .progress = TRUE) |>
+    simplify2array() |> apply(1, purrr::list_rbind)
+}
+
+#' Parallelized Read LECS data from files and parse into dataframes
+#'
+#' @param files A list of file paths containing LECS data
+#'
+#' @return a list containing met data, status data, and ADV data
+#' @export
+lecs_parse_files_p <- function(files, clean = FALSE) {
+  furrr::future_map(files, lecs_parse_file, clean, .progress = TRUE) |>
+    purrr::transpose() |>
+    furrr::future_map(purrr::list_rbind)
+}
+
+#' Read LECS data from file and parse into dataframes
+#'
+#' @param file A file path in LECS data format
+#' @param clean Filter bad data and timestamps if true
+#'
+#' @return a list containing LECS post_times, met data, status data, and ADV data
+#' @export
+#'
+lecs_parse_file <- function(file, clean = FALSE) {
+  df <- lecs_read_file(file)
+  met <- lecs_met_data(df)
+  status <- lecs_status_data(df)
+  adv_data <- lecs_adv_data(df, rinko_cals) |>
+    make_lecs_ts(status)
+
+  if (clean) {
+    met <- lecs_clean_met(met)
+    status <- lecs_clean_status(status)
+    adv_data <- lecs_clean_adv_data(adv_data)
+  }
+
+  list(met = met,
+       status = status,
+       adv_data = adv_data)
+}
