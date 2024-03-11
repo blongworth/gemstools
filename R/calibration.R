@@ -54,23 +54,28 @@ cal_ox <- function(raw_do, temp, rinko_cals) {
 generate_ph_model <- function(seaphox_data, lecs_data) {
   # extract lecs data from seaphox deployment time
   lecs_data_filt <- lecs_data |>
-    select(time, temp, ph_counts) |>
-    filter(time > min(seaphox_data$time),
-           time < max(seaphox_data$time)) |>
+    select(timestamp, year, month, day, hour, min,
+           temp, ph_counts) |>
+    filter(timestamp > min(seaphox_data$timestamp),
+           timestamp < max(seaphox_data$timestamp)) |>
     dplyr::collect()
 
   # aggregate seaphox to nearest minute
   sp_m <- seaphox_data %>%
-    mutate(time = clock::date_group(time, "minute")) |>
-    dplyr::group_by(time) |>
+    mutate(timestamp = clock::date_group(timestamp, "minute")) |>
+    dplyr::group_by(timestamp) |>
     dplyr::summarise(seaphox_ph = mean(pH),
                      seaphox_temp = mean(temp))
 
   # aggregate lecs to nearest minute
   lecs_m <- lecs_data_filt  %>%
-    mutate(time = clock::date_group(time, "minute")) |>
-    dplyr::group_by(time) |>
-    dplyr::summarise(lecs_ph_counts = mean(ph_counts),
+    #mutate(timestamp = clock::date_group(timestamp, "minute")) |>
+    #dplyr::group_by(timestamp) |>
+    dplyr::group_by(year, month, day, hour, min) |>
+    mutate(timestamp = clock::date_time_build(year, month, day, hour, min, 0,
+                                              zone = "America/New_York")) |>
+    dplyr::summarise(timestamp = mean(timestamp),
+                     lecs_ph_counts = mean(ph_counts),
                      lecs_temp = mean(temp))
 
   joined_data <- dplyr::inner_join(sp_m, lecs_m)

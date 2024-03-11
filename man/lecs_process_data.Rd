@@ -5,8 +5,9 @@
 \title{Process all LECS files in a dated folder}
 \usage{
 lecs_process_data(
-  date,
+  date = NULL,
   file_dir = NULL,
+  files = NULL,
   out_dir = "",
   clean = TRUE,
   dedupe = FALSE,
@@ -19,6 +20,9 @@ lecs_process_data(
 \item{date}{A date to use for constructing output filenames and default file path}
 
 \item{file_dir}{An optional directory to use instead of the default}
+
+\item{files}{An optional list of files to process. Supersedes \code{date} and
+\code{file_dir} for generating file list}
 
 \item{out_dir}{An optional directory to use instead of the default}
 

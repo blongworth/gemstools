@@ -47,5 +47,12 @@ make_lecs_ts <- function(adv_data, status) {
     ) |>
     dplyr::ungroup() |>
     filter(type == "D") |>
-    select(names(adv_data), timestamp = newtimestamp)
+    mutate(year = clock::get_year(timestamp),
+           month = clock::get_month(timestamp),
+           day = clock::get_day(timestamp),
+           hour = clock::get_hour(timestamp),
+           min = clock::get_minute(timestamp),
+           sec = clock::get_second(timestamp)) |>
+    select(timestamp = newtimestamp, names(adv_data),
+           year, month, day, hour, min, sec)
 }

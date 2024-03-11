@@ -1,9 +1,11 @@
-# Make list of all files
+# Functions for processing raw LECS data
 
 #' Process all LECS files in a dated folder
 #'
 #' @param date A date to use for constructing output filenames and default file path
 #' @param file_dir An optional directory to use instead of the default
+#' @param files An optional list of files to process. Supersedes `date` and
+#' `file_dir` for generating file list
 #' @param out_dir An optional directory to use instead of the default
 #' @param clean Set TRUE to remove bad data and timestamps
 #' @param dedupe Set TRUE to remove lines with duplicate timestamps
@@ -12,8 +14,9 @@
 #' @param parquet Set TRUE to write parquet (Arrow) data
 #'
 #' @export
-lecs_process_data <- function(date,
+lecs_process_data <- function(date = NULL,
                               file_dir = NULL,
+                              files = NULL,
                               out_dir = "",
                               clean = TRUE,
                               dedupe = FALSE,
@@ -21,11 +24,18 @@ lecs_process_data <- function(date,
                               csv = TRUE,
                               parquet = TRUE
                               ) {
+  if ( is.null(c(date, file_dir, files)) ) {
+    stop("Provide a date, file_dir, or a list of files to process.")
+  }
+
   if (is.null(file_dir)) {
     file_dir <- paste0("data/SD Card Data/LECS_surface_sd/lecs_surface_", date)
   }
 
-  files <- list.files(file_dir, pattern = "^202[3|4]", full.names = TRUE)
+  if (is.null(files)) {
+    files <- list.files(file_dir, pattern = "^202[3|4]", full.names = TRUE)
+  }
+
   message(paste(length(files), "files to process"))
 
   # Process files into a list containing data frames for ADV, status, and Met
@@ -204,7 +214,7 @@ lecs_met_data <- function(df) {
            timestamp = lubridate::make_datetime(year, month, day,
                                      hour, min, sec,
                                      tz = "America/New_York")) |>
-    select(-row_num, -type, -any_of("line"), -hour, -min, -sec, -day, -month, -year)
+    select(-row_num, -type, -any_of("line"), year, month, day, hour, min, sec)
 }
 
 #' Clean met data
@@ -269,7 +279,7 @@ lecs_clean_status <- function(status) {
            adv_min < 61, adv_hour < 24, adv_year < 100) |>
     select(time = timestamp, adv_time = adv_timestamp,
            bat, soundspeed, heading, pitch, roll, temp,
-           pump_current, pump_voltage, pump_power)
+           pump_current, pump_voltage, pump_power, year, month, day, hour, min, sec)
 }
 
 #' parse LECS ADV data
@@ -283,7 +293,7 @@ lecs_clean_status <- function(status) {
 #' @export
 #' @importFrom magrittr %>%
 lecs_adv_data <- function(df, rinko_cals) {
-test <-   df |>
+test <- df |>
     dplyr::filter(type == "D") |>
     tidyr::separate(data,
                     into = c('count', 'pressure',
@@ -329,8 +339,9 @@ lecs_clean_adv_data <- function(adv) {
            #ph_counts < 15000,
            #ph_counts > 5000,
            ) |>
-    select(time = timestamp, count, pressure, u, v, w, amp1, amp2, amp3,
-           corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO, DO_percent, pH)
+    select(timestamp, count, pressure, u, v, w, amp1, amp2, amp3,
+           corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO,
+           DO_percent, pH, year, month, day, hour, min, sec)
 }
 
 #' Calculate number of missing lines
@@ -363,9 +374,9 @@ lecs_missing <- function(count, line = NULL) {
 read_seaphox <- function(file) {
   data.table::fread(file) |>
     janitor::clean_names() |>
-    mutate(time = lubridate::mdy_hms(date_time_utc_04_00,
+    mutate(timestamp = lubridate::mdy_hms(date_time_utc_04_00,
                           tz = "UTC")) |>
-    select(time,
+    select(timestamp,
            pH = internal_p_h_p_h,
            temp = p_h_temperature_celsius,
            pressure = pressure_decibar,
