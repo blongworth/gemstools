@@ -188,8 +188,8 @@ lecs_parse_files_db <- function(con, files, clean = FALSE) {
 #'
 #' @return a db connection
 #' @export
-lecs_create_db <- function(lecs_data, db_file) {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = "duckdb")
+lecs_create_db <- function(lecs_data) {
+  con <- DBI::dbConnect(duckdb::duckdb(dbdir = "duckdb"))
   DBI::dbCreateTable(con, "adv", lecs_data[["adv_data"]])
   DBI::dbCreateTable(con, "status", lecs_data[["status"]])
   DBI::dbCreateTable(con, "met", lecs_data[["met"]])

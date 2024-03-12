@@ -1,5 +1,6 @@
 test_that("make_lecs_ts() works for 21 lines of data", {
-  options(digits.secs=3)
+  op <- options(digits.secs=3)
+  on.exit(options(op), add = TRUE, after = FALSE)
   df <- readRDS(test_path("lecs_web.rds")) |>
     head(21)
   adv_ts_21 <- readRDS(test_path("adv_ts_21.rds"))
@@ -11,7 +12,8 @@ test_that("make_lecs_ts() works for 21 lines of data", {
 })
 
 test_that("make_lecs_ts() works for 40 lines of data", {
-  options(digits.secs=3)
+  op <- options(digits.secs=3)
+  on.exit(options(op), add = TRUE, after = FALSE)
   df <- readRDS(test_path("lecs_web.rds")) |>
     head(40)
   adv_ts_40 <- readRDS(test_path("adv_ts_40.rds"))
