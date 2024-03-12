@@ -145,9 +145,10 @@ lecs_clean_status <- function(status) {
            #soundspeed > 1450,
            adv_day < 32, adv_month > 0, adv_month < 13,
            adv_min < 61, adv_hour < 24, adv_year < 100) |>
-    select(time = timestamp, adv_time = adv_timestamp,
+    select(timestamp, adv_timestamp,
            bat, soundspeed, heading, pitch, roll, temp,
-           pump_current, pump_voltage, pump_power, year, month, day, hour, min, sec)
+           pump_current, pump_voltage, pump_power,
+           year, month, day, hour, min, sec)
 }
 
 #' parse LECS ADV data

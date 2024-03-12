@@ -1,5 +1,39 @@
 # Functions for calibrating LECS data
 
+#' Calculate O2 concentration
+#'
+#' Uses GSW. Assume sal, pressure, lon, lat if not provided.
+#'
+#' @param do_percent Calibrated DO saturation percent
+#' @param temp Conservative temp in deg C
+#' @param salinity Absolute salinity in g/kg
+#' @param sea_pressure Absolute pressure - 10.1325 dbar
+#' @param lon longitude in decimal degrees
+#' @param lat latitude in decimal degrees
+#'
+#' @return O2 concentration in umol/kg
+#' @export
+o2_sat_to_conc <- function(do_percent,
+                           temp,
+                           salinity = 31.26,
+                           sea_pressure = 0.2,
+                           lon = -70.700833,
+                           lat = 41.516944) {
+  sol <- gsw::gsw_O2sol(salinity, temp, sea_pressure, lon, lat)
+  do_percent / 100 * sol
+}
+
+#' Calculate H+ concentration
+#'
+#' @param ph Calibrated pH
+#'
+#' @return H+ concentration in mol/L
+#' @export
+pH_to_conc <- function(ph) {
+  (10^(-1 * ph) * 1000) ## convert to mol/m3
+}
+
+
 #' calibrate pH with fit parameters
 #'
 #' @param ph_counts A vector of ph counts
@@ -54,8 +88,7 @@ cal_ox <- function(raw_do, temp, rinko_cals) {
 generate_ph_model <- function(seaphox_data, lecs_data) {
   # extract lecs data from seaphox deployment time
   lecs_data_filt <- lecs_data |>
-    select(timestamp, year, month, day, hour, min,
-           temp, ph_counts) |>
+    select(timestamp, temp, ph_counts) |>
     filter(timestamp > min(seaphox_data$timestamp),
            timestamp < max(seaphox_data$timestamp)) |>
     dplyr::collect()
@@ -69,16 +102,16 @@ generate_ph_model <- function(seaphox_data, lecs_data) {
 
   # aggregate lecs to nearest minute
   lecs_m <- lecs_data_filt  %>%
-    #mutate(timestamp = clock::date_group(timestamp, "minute")) |>
-    #dplyr::group_by(timestamp) |>
-    dplyr::group_by(year, month, day, hour, min) |>
-    mutate(timestamp = clock::date_time_build(year, month, day, hour, min, 0,
-                                              zone = "America/New_York")) |>
+    mutate(timestamp = clock::date_group(timestamp, "minute")) |>
+    dplyr::group_by(timestamp) |>
+    #dplyr::group_by(year, month, day, hour, min) |>
+    #mutate(timestamp = clock::date_time_build(year, month, day, hour, min, 0,
+    #                                          zone = "America/New_York")) |>
     dplyr::summarise(timestamp = mean(timestamp),
                      lecs_ph_counts = mean(ph_counts),
                      lecs_temp = mean(temp))
 
-  joined_data <- dplyr::inner_join(sp_m, lecs_m)
+  joined_data <- dplyr::inner_join(sp_m, lecs_m, by = dplyr::join_by(timestamp))
   # rolling join to combine lecs and seaphox data
   # joined_data <- data.table(adv_data_filt)[data.table(sp_m),
   #                                           on = .(time),

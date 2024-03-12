@@ -21,7 +21,7 @@ lecs_process_data <- function(date = NULL,
                               clean = TRUE,
                               dedupe = FALSE,
                               resample = FALSE,
-                              csv = TRUE,
+                              csv = FALSE,
                               parquet = TRUE
                               ) {
   if ( is.null(c(date, file_dir, files)) ) {
@@ -92,6 +92,63 @@ lecs_process_data <- function(date = NULL,
   }
 }
 
+#' Process all LECS files
+#'
+#' Uses DuckDB to handle larger-than-memory data, and stores data in
+#' Arrow/Parquet format.
+#'
+#' @param date A date to use for constructing output filenames and default file path
+#' @param file_dir An optional directory to use instead of the default
+#' @param files An optional list of files to process. Supersedes `date` and
+#' `file_dir` for generating file list
+#' @param out_dir An optional directory to use instead of the default
+#' @param clean Set TRUE to remove bad data and timestamps
+#'
+#' @export
+lecs_process_data_db <- function(date = NULL,
+                                 file_dir = NULL,
+                                 files = NULL,
+                                 out_dir = "",
+                                 clean = TRUE
+                                ) {
+  if ( is.null(c(date, file_dir, files)) ) {
+    stop("Provide a date, file_dir, or a list of files to process.")
+  }
+
+  if (is.null(file_dir)) {
+    file_dir <- paste0("data/SD Card Data/LECS_surface_sd/lecs_surface_", date)
+  }
+
+  if (is.null(files)) {
+    files <- list.files(file_dir, pattern = "^202[3|4]", full.names = TRUE)
+  }
+
+  message(paste(length(files), "files to process"))
+
+  # Process files into a list containing data frames for ADV, status, and Met
+
+  future::plan(future::multicore)
+
+  tictoc::tic("Time to read and process data: ")
+  lecs_data <- lecs_parse_file(files[1])
+  con <- lecs_create_db(lecs_data)
+  lecs_data <- lecs_parse_files_db(con, files, clean)
+  message(tictoc::toc())
+
+  tictoc::tic("Time to write parquet: ")
+  out_file <- paste0(out_dir, "lecs_met_", date, ".parquet")
+  query <- paste0("COPY met TO '", out_file, "' (FORMAT PARQUET);")
+  dbExecute(con, query)
+  out_file <- paste0(out_dir, "lecs_status_", date, ".parquet")
+  query <- paste0("COPY status TO '", out_file, "' (FORMAT PARQUET);")
+  dbExecute(con, query)
+  out_file <- paste0(out_dir, "lecs_adv_data", date, ".parquet")
+  query <- paste0("COPY adv TO '", out_file, "' (FORMAT PARQUET);")
+  dbExecute(con, query)
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  message(tictoc::toc())
+}
+
 #' Read LECS data from files and parse into dataframes
 #'
 #' @param files A list of file paths containing LECS data
@@ -113,6 +170,44 @@ lecs_parse_files_p <- function(files, clean = FALSE) {
   furrr::future_map(files, lecs_parse_file, clean, .progress = TRUE) |>
     purrr::transpose() |>
     furrr::future_map(purrr::list_rbind)
+}
+
+#' Read LECS data from files and parse into duckdb
+#'
+#' @param files A list of file paths containing LECS data
+#'
+#' @return a list containing met data, status data, and ADV data
+#' @export
+lecs_parse_files_db <- function(con, files, clean = FALSE) {
+  furrr::future_walk(files, lecs_parse_file_db, con = con, clean, .progress = TRUE)
+}
+
+#' Initialize a DuckDB for storing LECS data
+#'
+#' @param lecs_data
+#'
+#' @return a db connection
+#' @export
+lecs_create_db <- function(lecs_data, db_file) {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = "duckdb")
+  DBI::dbCreateTable(con, "adv", lecs_data[["adv_data"]])
+  DBI::dbCreateTable(con, "status", lecs_data[["status"]])
+  DBI::dbCreateTable(con, "met", lecs_data[["met"]])
+  con
+}
+
+#' Read LECS data from file and parse into DuckDB
+#'
+#' @param file A file path in LECS data format
+#' @param clean Filter bad data and timestamps if true
+#'
+#' @return none
+#' @export
+lecs_parse_file_db <- function(con, file, clean = FALSE) {
+  lecs_data <- lecs_parse_file(file, clean)
+  DBI::dbAppendTable(con, "adv", lecs_data[["adv_data"]])
+  DBI::dbAppendTable(con, "status", lecs_data[["status"]])
+  DBI::dbAppendTable(con, "met", lecs_data[["met"]])
 }
 
 #' Read LECS data from file and parse into dataframes
@@ -140,3 +235,4 @@ lecs_parse_file <- function(file, clean = FALSE) {
        status = status,
        adv_data = adv_data)
 }
+
