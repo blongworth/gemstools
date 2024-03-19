@@ -4,7 +4,7 @@
 \alias{lecs_create_db}
 \title{Initialize a DuckDB for storing LECS data}
 \usage{
-lecs_create_db(lecs_data, db_file)
+lecs_create_db(lecs_data)
 }
 \arguments{
 \item{lecs_data}{}
