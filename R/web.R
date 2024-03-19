@@ -28,15 +28,20 @@ lecs_read_web <- function(start_date = NULL) {
 #' @return a list containing LECS post_times, met data, status data, and ADV data
 #' @export
 #'
-lecs_read_parse_web <- function(start_date = NULL) {
+lecs_parse_web <- function(start_date = NULL, clean = TRUE) {
   df <- lecs_read_web(start_date) |>
-
     lecs_add_metadata()
   post_times <- lecs_post_times(df)
   met <- lecs_met_data(df)
   status <- lecs_status_data(df)
   adv_data <- lecs_adv_data(df, rinko_cals) |>
     make_lecs_ts(status)
+
+  if (clean) {
+    met <- lecs_clean_met(met)
+    status <- lecs_clean_status(status)
+    adv_data <- lecs_clean_adv_data(adv_data)
+  }
 
   list(post_times = post_times,
        met = met,
