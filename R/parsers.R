@@ -56,7 +56,7 @@ lecs_post_times <- function(df) {
                                      hour, min, sec,
                                      tz = "America/New_York"),
            row_count = row_num - lag(row_num)) |>
-    select(timestamp, row_count)
+    select(timestamp, send, row_count)
 }
 
 #' parse LECS met data
