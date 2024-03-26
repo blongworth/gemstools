@@ -53,8 +53,7 @@ lecs_post_times <- function(df) {
                       'day', 'month', 'year'), as.integer),
            across(c('lat', 'lon'), as.numeric),
            timestamp = lubridate::make_datetime(year, month, day,
-                                     hour, min, sec,
-                                     tz = "America/New_York"),
+                                     hour, min, sec),
            row_count = row_num - lag(row_num)) |>
     select(timestamp, send, row_count)
 }
