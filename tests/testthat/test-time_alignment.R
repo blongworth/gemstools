@@ -11,6 +11,7 @@ test_that("make_lecs_ts() works for 21 lines of data", {
   expect_identical(adv_data_ts, adv_ts_21)
 })
 
+# not sure if we need to separate out time components or not
 test_that("make_lecs_ts() adds time components", {
   df <- readRDS(test_path("lecs_web.rds")) |>
     head(21)
