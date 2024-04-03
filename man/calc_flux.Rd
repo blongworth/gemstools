@@ -9,6 +9,7 @@ calc_flux(
   velocity,
   time,
   frequency,
+  window = 30 * 60,
   low_cutoff = 1/(15 * 60),
   high_cutoff = 0.125
 )
@@ -21,6 +22,8 @@ calc_flux(
 \item{time}{timestamps for quantity and velocity}
 
 \item{frequency}{sampling or resampled data frequency}
+
+\item{window}{length of data in seconds}
 
 \item{low_cutoff}{low cutoff in Hz}
 

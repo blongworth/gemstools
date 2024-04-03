@@ -6,17 +6,24 @@
 #' @param quantity measured quantity
 #' @param velocity measured velocity
 #' @param time timestamps for quantity and velocity
+#' @param window length of data in seconds
 #' @param frequency sampling or resampled data frequency
 #' @param low_cutoff low cutoff in Hz
 #' @param high_cutoff high cutoff in Hz
 #'
 #' @return the flux in units of `quantity` per m^2 per length of `time`
 #' @export
-calc_flux <- function(quantity, velocity, time, frequency, low_cutoff = 1/(15*60), high_cutoff = 0.125) {
-  ts <- xts::xts(cbind(quantity, velocity), order.by = time, frequency = frequency)
-  pf <- gsignal::cpsd(ts, fs = frequency)
+calc_flux <- function(quantity, velocity, time,
+                      frequency,
+                      window = 30 * 60, # 30 min window
+                      low_cutoff = 1/(15*60),
+                      high_cutoff = 0.125) {
+  win <- max(length(quantity), window %/% (1/frequency))
+  ts <- xts::as.xts(cbind(velocity, quantity), order.by = time, frequency = frequency)
+  pf <- gsignal::cpsd(ts, fs = frequency, window = win, overlap = 0)
   mask <- pf$freq > low_cutoff & pf$freq < high_cutoff
-  pracma::trapz(pf$freq[mask], pf$cross[mask]) * 60 * 60 * 1000 # flux in unit/m2/hr
+  flux <-  pracma::trapz(pf$freq[mask], pf$cross[mask])
+  flux * 60 * 60 # convert flux per second to flux per hour
 }
 
 #' Calculate hourly fluxes
