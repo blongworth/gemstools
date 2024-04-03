@@ -121,3 +121,39 @@ generate_ph_model <- function(seaphox_data, lecs_data) {
   coef(ph_lm)
 }
 
+#' Fit a O2 model to the given data and return coefficients
+#'
+#' @param seaphox_data a seaphox dataframe
+#' @param adv_data an adv dataframe
+#'
+#' @return A named vector of lm coefficents
+#' @export
+#' @import data.table
+generate_o2_model <- function(seaphox_data, lecs_data) {
+  # extract lecs data from seaphox deployment time
+  lecs_data_filt <- lecs_data |>
+    select(timestamp, DO_percent) |>
+    filter(timestamp > min(seaphox_data$timestamp),
+           timestamp < max(seaphox_data$timestamp)) |>
+    dplyr::collect()
+
+  # aggregate seaphox to nearest minute
+  sp_m <- seaphox_data %>%
+    mutate(timestamp = clock::date_group(timestamp, "minute")) |>
+    dplyr::group_by(timestamp) |>
+    dplyr::summarise(seaphox_o2 = mean(oxy))
+
+  # aggregate lecs to nearest minute
+  lecs_m <- lecs_data_filt  %>%
+    mutate(timestamp = clock::date_group(timestamp, "minute")) |>
+    dplyr::group_by(timestamp) |>
+    #dplyr::group_by(year, month, day, hour, min) |>
+    #mutate(timestamp = clock::date_time_build(year, month, day, hour, min, 0,
+    #                                          zone = "America/New_York")) |>
+    dplyr::summarise(lecs_DO_percent = mean(DO_percent))
+
+  joined_data <- dplyr::inner_join(sp_m, lecs_m, by = dplyr::join_by(timestamp))
+
+  o2_lm <- lm(seaphox_o2 ~ lecs_DO_percent, data = joined_data)
+  coef(o2_lm)
+}
