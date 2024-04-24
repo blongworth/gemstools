@@ -3,6 +3,7 @@
 export(cal_ox)
 export(cal_ph)
 export(cal_temp)
+export(generate_o2_model)
 export(generate_ph_model)
 export(lecs_add_metadata)
 export(lecs_adv_data)
