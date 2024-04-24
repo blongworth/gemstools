@@ -44,7 +44,7 @@ lecs_process_data <- function(date = NULL,
 
   tictoc::tic("Time to read and process data: ")
   lecs_data <- lecs_parse_files_p(files, clean)
-  message(tictoc::toc())
+  message(tictoc::toc(), "\n")
 
   attach(lecs_data)
 
@@ -71,24 +71,27 @@ lecs_process_data <- function(date = NULL,
     data.table::fwrite(met, paste0(out_dir, "lecs_met_", date, ".csv"))
     data.table::fwrite(status, paste0(out_dir, "lecs_status_", date, ".csv"))
     data.table::fwrite(adv_data, paste0(out_dir, "lecs_adv_data_", date, ".csv"))
-    message(tictoc::toc())
+    message(tictoc::toc(), "\n")
   }
 
   if (parquet) {
     tictoc::tic("Time to write parquet: ")
     met |>
       arrow::arrow_table() |>
-      group_by(year, month) |>
+      #dplyr::group_by(year, month) |>
       arrow::write_dataset(paste0(out_dir, "lecs_met_", date, ".parquet"))
+    message("Wrote: ", paste0(out_dir, "lecs_met_", date, ".parquet"), "\n")
     status |>
       arrow::arrow_table() |>
-      group_by(year, month) |>
+      #dplyr::group_by(year, month) |>
       arrow::write_dataset(paste0(out_dir, "lecs_status_", date, ".parquet"))
+    message("Wrote: ", paste0(out_dir, "lecs_status_", date, ".parquet"), "\n")
     adv_data |>
       arrow::arrow_table() |>
-      group_by(year, month) |>
+      #dplyr::group_by(year, month) |>
       arrow::write_dataset(paste0(out_dir, "lecs_adv_data_", date, ".parquet"))
-    message(tictoc::toc())
+    message("Wrote: ", paste0(out_dir, "lecs_adv_data_", date, ".parquet"), "\n")
+    message(tictoc::toc(), "\n")
   }
 }
 
