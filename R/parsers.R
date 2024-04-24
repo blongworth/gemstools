@@ -1,5 +1,7 @@
 # Functions for reading and parsing raw LECS data
 
+# TODO: add option to correct future status dates using met data before adv cor
+
 #' LECS raw file parser
 #'
 #' Parse raw files to a df with row_num and type
@@ -79,9 +81,8 @@ lecs_met_data <- function(df) {
            wind_speed = ifelse(wind_speed < 99, wind_speed, NA),
            wind_dir = ifelse(wind_dir < 360, wind_dir, NA),
            timestamp = lubridate::make_datetime(year, month, day,
-                                     hour, min, sec,
-                                     tz = "America/New_York")) |>
-    select(-row_num, -type, -any_of("line"), year, month, day, hour, min, sec)
+                                     hour, min, sec)) |>
+    select(-row_num, -type, -any_of("line"))
 }
 
 #' Clean met data
@@ -125,11 +126,9 @@ lecs_status_data <- function(df) {
            dplyr::across(c('bat', 'soundspeed',
                            'heading', 'pitch', 'roll') , ~(.x) * .1),
            temp = temp * 0.01,
-           timestamp = lubridate::make_datetime(year, month, day, hour, min, sec,
-                                                tz = "America/New_York"),
+           timestamp = lubridate::make_datetime(year, month, day, hour, min, sec),
            adv_timestamp = lubridate::make_datetime(adv_year + 2000, adv_month, adv_day,
-                                                    adv_hour, adv_min, adv_sec,
-                                                    tz = "America/New_York"))
+                                                    adv_hour, adv_min, adv_sec))
 }
 
 #' Clean status data
@@ -147,8 +146,7 @@ lecs_clean_status <- function(status) {
            adv_min < 61, adv_hour < 24, adv_year < 100) |>
     select(timestamp, adv_timestamp,
            bat, soundspeed, heading, pitch, roll, temp,
-           pump_current, pump_voltage, pump_power,
-           year, month, day, hour, min, sec)
+           pump_current, pump_voltage, pump_power)
 }
 
 #' parse LECS ADV data
@@ -210,7 +208,7 @@ lecs_clean_adv_data <- function(adv) {
            ) |>
     select(timestamp, count, pressure, u, v, w, amp1, amp2, amp3,
            corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO,
-           DO_percent, pH, year, month, day, hour, min, sec)
+           DO_percent, pH)
 }
 
 #' Calculate number of missing lines
