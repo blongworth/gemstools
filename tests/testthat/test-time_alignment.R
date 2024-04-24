@@ -1,4 +1,5 @@
 # TODO: test how this handles future status dates
+# TODO: test status timestamp correction
 
 test_that("make_lecs_ts() works for 21 lines of data", {
   op <- options(digits.secs=3)

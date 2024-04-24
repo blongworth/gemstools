@@ -126,9 +126,10 @@ lecs_status_data <- function(df) {
            dplyr::across(c('bat', 'soundspeed',
                            'heading', 'pitch', 'roll') , ~(.x) * .1),
            temp = temp * 0.01,
-           timestamp = lubridate::make_datetime(year, month, day, hour, min, sec),
+           orig_timestamp = lubridate::make_datetime(year, month, day, hour, min, sec),
            adv_timestamp = lubridate::make_datetime(adv_year + 2000, adv_month, adv_day,
-                                                    adv_hour, adv_min, adv_sec))
+                                                    adv_hour, adv_min, adv_sec),
+           timestamp = correct_status_timestamp_adv(orig_timestamp, adv_timestamp))
 }
 
 #' Clean status data
