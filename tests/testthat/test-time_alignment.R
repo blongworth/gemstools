@@ -1,3 +1,5 @@
+# TODO: test how this handles future status dates
+
 test_that("make_lecs_ts() works for 21 lines of data", {
   op <- options(digits.secs=3)
   on.exit(options(op), add = TRUE, after = FALSE)

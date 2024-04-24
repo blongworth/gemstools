@@ -1,3 +1,20 @@
+# TODO: add option to correct future status dates using met data before adv cor
+
+#' Correct adv timestamp using initial offset from teensy timestamp
+#'
+#' Provides a per-file timestamp that does not have duplicated
+#' or missing timestamps due to serial packet arrival time jitter.
+#'
+#' @param timestamp A vector of teensy lander timestamps
+#' @param adv_timestamp A vector of ADV timestamps
+#'
+#' @return A vector of offset-corrected adv timestamps.
+#' @export
+correct_status_timestamp_adv <- function(timestamp, adv_timestamp) {
+  offset <- difftime(timestamp[1], adv_timestamp[1], units = "secs")
+  adv_timestamp + offset
+}
+
 #' Apply timestamps to LECS ADV data
 #'
 #' Version from R2evans on stack overflow
