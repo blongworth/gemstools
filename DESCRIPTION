@@ -17,6 +17,7 @@ Imports:
     gsw,
     lubridate,
     purrr,
+    Rcpp,
     readr,
     stringr,
     xts
@@ -26,3 +27,5 @@ Config/testthat/edition: 3
 Depends: 
     R (>= 2.10)
 LazyData: true
+LinkingTo: 
+    Rcpp
