@@ -13,7 +13,9 @@
 #' @return A vector of offset-corrected adv timestamps.
 #' @export
 correct_status_timestamp_adv <- function(timestamp, adv_timestamp) {
-  offset <- difftime(timestamp[1], adv_timestamp[1], units = "secs")
+  i <- which(timestamp <= Sys.time())[1]
+  if (!i) return(timestamp)
+  offset <- difftime(timestamp[i], adv_timestamp[i], units = "secs")
   adv_timestamp + offset
 }
 

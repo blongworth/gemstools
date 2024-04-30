@@ -129,7 +129,8 @@ lecs_status_data <- function(df) {
            orig_timestamp = lubridate::make_datetime(year, month, day, hour, min, sec),
            adv_timestamp = lubridate::make_datetime(adv_year + 2000, adv_month, adv_day,
                                                     adv_hour, adv_min, adv_sec),
-           timestamp = fix_status_timestamps(orig_timestamp, adv_timestamp))
+           #timestamp = fix_status_timestamps(orig_timestamp, adv_timestamp))
+           timestamp = correct_status_timestamp_adv(orig_timestamp, adv_timestamp))
 }
 
 #' Clean status data
