@@ -1,5 +1,22 @@
 # TODO: add option to correct future status dates using met data before adv cor
 
+#' Correct adv timestamp using jitter correction
+#'
+#' Provides a per-file timestamp that does not have duplicated
+#' or missing timestamps due to serial packet arrival time jitter.
+#'
+#' Removes future timestamps to prevent "2038" problem.
+#'
+#' @param timestamp A vector of teensy lander timestamps
+#' @param adv_timestamp A vector of ADV timestamps
+#'
+#' @return A vector of corrected timestamps.
+#' @export
+correct_status_timestamp_jitter <- function(timestamp, adv_timestamp) {
+    timestamp[which(timestamp > Sys.time())] <- NA
+    adv_timestamp[which(timestamp > Sys.time())] <- NA
+  fix_timestamp_jitter(df["timestamp"], df["adv_timestamp"])
+}
 
 
 #' Correct adv timestamp using initial offset from teensy timestamp

@@ -12,7 +12,7 @@ using namespace Rcpp;
 //' @param adv_timestamp A vector of adv status timestamps
 //' @return The corrected timestamp vector
 // [[Rcpp::export]]
-IntegerVector fix_status_timestamps(IntegerVector timestamp,
+IntegerVector fix_timestamp_jitter(IntegerVector timestamp,
                                     IntegerVector adv_timestamp) {
   for (int i = 0; i < timestamp.size(); i++) {
     if (timestamp[i] == timestamp[i - 1]) {

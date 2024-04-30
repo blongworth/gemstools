@@ -10,21 +10,21 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// fix_status_timestamps
-IntegerVector fix_status_timestamps(IntegerVector timestamp, IntegerVector adv_timestamp);
-RcppExport SEXP _mlabtools_fix_status_timestamps(SEXP timestampSEXP, SEXP adv_timestampSEXP) {
+// fix_timestamp_jitter
+IntegerVector fix_timestamp_jitter(IntegerVector timestamp, IntegerVector adv_timestamp);
+RcppExport SEXP _mlabtools_fix_timestamp_jitter(SEXP timestampSEXP, SEXP adv_timestampSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< IntegerVector >::type timestamp(timestampSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type adv_timestamp(adv_timestampSEXP);
-    rcpp_result_gen = Rcpp::wrap(fix_status_timestamps(timestamp, adv_timestamp));
+    rcpp_result_gen = Rcpp::wrap(fix_timestamp_jitter(timestamp, adv_timestamp));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_mlabtools_fix_status_timestamps", (DL_FUNC) &_mlabtools_fix_status_timestamps, 2},
+    {"_mlabtools_fix_timestamp_jitter", (DL_FUNC) &_mlabtools_fix_timestamp_jitter, 2},
     {NULL, NULL, 0}
 };
 
