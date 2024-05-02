@@ -92,7 +92,7 @@ lecs_met_data <- function(df) {
 #' @export
 lecs_clean_met <- function(met) {
   met |>
-    filter(timestamp <= "2024-03-01",
+    filter(timestamp <= "2024-06-01",
            #timestamp <= as.POSIXct(Sys.Date()),
            timestamp > "2023-01-01")
 }
@@ -140,7 +140,7 @@ lecs_status_data <- function(df) {
 #' @export
 lecs_clean_status <- function(status) {
   status |>
-    filter(timestamp <= "2024-03-01",
+    filter(timestamp <= "2024-06-01",
            #timestamp <= Sys.Date(),
            timestamp > "2023-01-01",
            #soundspeed > 1450,
@@ -198,7 +198,7 @@ test <- df |>
 #' @export
 lecs_clean_adv_data <- function(adv) {
   adv |>
-    filter(timestamp <= "2024-04-01",
+    filter(timestamp <= "2024-06-01",
            #timestamp <= Sys.Date(),
            timestamp > "2023-01-01",
            !is.na(count),

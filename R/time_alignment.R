@@ -31,7 +31,7 @@ correct_status_timestamp_jitter <- function(timestamp, adv_timestamp) {
 #' @export
 correct_status_timestamp_adv <- function(timestamp, adv_timestamp) {
   i <- which(timestamp <= Sys.time())[1]
-  if (!i) return(timestamp)
+  if (!length(i)) return(timestamp)
   offset <- difftime(timestamp[i], adv_timestamp[i], units = "secs")
   adv_timestamp + offset
 }
