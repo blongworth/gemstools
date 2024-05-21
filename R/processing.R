@@ -225,14 +225,36 @@ lecs_parse_file <- function(file, clean = FALSE) {
   df <- lecs_read_file(file)
   met <- lecs_met_data(df)
   status <- lecs_status_data(df)
-  adv_data <- lecs_adv_data(df, rinko_cals) |>
-    make_lecs_ts(status)
+  adv_data <- lecs_adv_data(df, rinko_cals)
 
   if (clean) {
     met <- lecs_clean_met(met)
     status <- lecs_clean_status(status)
     adv_data <- lecs_clean_adv_data(adv_data)
   }
+
+  # Status timestamps fixed during cleaning
+  # Should/can this be after cleaning data?
+  # Needs to keep row/count info
+  # remove garbage NA timestamps after
+
+  adv_data <- adv_data |>
+    make_lecs_ts(status) |>
+    filter(!is.na(timestamp))
+
+  # Select needed data here
+  status <- status |>
+    select(timestamp, adv_timestamp,
+           bat, soundspeed, heading, pitch, roll, temp,
+           pump_current, pump_voltage, pump_power)
+
+  adv_data <- adv_data |>
+    select(timestamp, pressure, u, v, w, amp1, amp2, amp3,
+           corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO,
+           DO_percent, pH)
+
+  # Where to fill missing timestamps and impute data?
+  # Per file or for entire dataset?
 
   list(met = met,
        status = status,

@@ -15,7 +15,7 @@
 correct_status_timestamp_jitter <- function(timestamp, adv_timestamp) {
     timestamp[which(timestamp > Sys.time())] <- NA
     adv_timestamp[which(timestamp > Sys.time())] <- NA
-  fix_timestamp_jitter(df["timestamp"], df["adv_timestamp"])
+  fix_timestamp_jitter(timestamp, adv_timestamp)
 }
 
 
