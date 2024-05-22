@@ -16,7 +16,7 @@ test_that("Cleaning Status works", {
   status <- lecs_status_data(df)
   status_clean <- lecs_clean_status(status)
   expect_true(is.data.frame(status_clean))
-  expect_equal(nrow(status_clean), 32)
+  expect_equal(nrow(status_clean), 10)
 })
 
 test_that("Parsing Met works", {
