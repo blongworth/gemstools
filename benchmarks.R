@@ -5,10 +5,8 @@ library(bench)
 options(digits.secs=3)
 test_status <- readRDS(test_path("lecs_status.rds"))
 test_data <- readRDS(test_path("lecs_data.rds"))
-prev_ts <- as.POSIXct("2024-01-24 16:11:11",
-                      tz = "America/New_York")
-next_ts <- as.POSIXct("2024-01-24 16:13:29",
-                      tz = "America/New_York")
+prev_ts <- as.POSIXct("2024-01-24 16:11:11")
+next_ts <- as.POSIXct("2024-01-24 16:13:29")
 
 mark(counts_between(255,0))
 mark(prev_status(test_status, 15))

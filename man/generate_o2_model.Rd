@@ -15,5 +15,6 @@ generate_o2_model(seaphox_data, lecs_data)
 A named vector of lm coefficents
 }
 \description{
+TODO: work with o2 concentration instead of saturation
 Fit a O2 model to the given data and return coefficients
 }

@@ -1,3 +1,41 @@
+# TODO: add option to correct future status dates using met data before adv cor
+
+#' Correct adv timestamp using jitter correction
+#'
+#' Provides a per-file timestamp that does not have duplicated
+#' or missing timestamps due to serial packet arrival time jitter.
+#'
+#' Removes future timestamps to prevent "2038" problem.
+#'
+#' @param timestamp A vector of teensy lander timestamps
+#' @param adv_timestamp A vector of ADV timestamps
+#'
+#' @return A vector of corrected timestamps.
+#' @export
+correct_status_timestamp_jitter <- function(timestamp, adv_timestamp) {
+    timestamp[which(timestamp > Sys.time())] <- NA
+    adv_timestamp[which(adv_timestamp > Sys.time())] <- NA
+  fix_timestamp_jitter(timestamp, adv_timestamp)
+}
+
+
+#' Correct adv timestamp using initial offset from teensy timestamp
+#'
+#' Provides a per-file timestamp that does not have duplicated
+#' or missing timestamps due to serial packet arrival time jitter.
+#'
+#' @param timestamp A vector of teensy lander timestamps
+#' @param adv_timestamp A vector of ADV timestamps
+#'
+#' @return A vector of offset-corrected adv timestamps.
+#' @export
+correct_status_timestamp_adv <- function(timestamp, adv_timestamp) {
+  i <- which(timestamp <= Sys.time())[1]
+  if (!length(i)) return(timestamp)
+  offset <- difftime(timestamp[i], adv_timestamp[i], units = "secs")
+  adv_timestamp + offset
+}
+
 #' Apply timestamps to LECS ADV data
 #'
 #' Version from R2evans on stack overflow
@@ -47,12 +85,5 @@ make_lecs_ts <- function(adv_data, status) {
     ) |>
     dplyr::ungroup() |>
     filter(type == "D") |>
-    mutate(year = clock::get_year(timestamp),
-           month = clock::get_month(timestamp),
-           day = clock::get_day(timestamp),
-           hour = clock::get_hour(timestamp),
-           min = clock::get_minute(timestamp),
-           sec = clock::get_second(timestamp)) |>
-    select(timestamp = newtimestamp, names(adv_data),
-           year, month, day, hour, min, sec)
+    select(timestamp = newtimestamp, names(adv_data))
 }

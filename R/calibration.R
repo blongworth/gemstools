@@ -123,6 +123,8 @@ generate_ph_model <- function(seaphox_data, lecs_data) {
 
 #' Fit a O2 model to the given data and return coefficients
 #'
+#' TODO: work with o2 concentration instead of saturation
+#'
 #' @param seaphox_data a seaphox dataframe
 #' @param adv_data an adv dataframe
 #'

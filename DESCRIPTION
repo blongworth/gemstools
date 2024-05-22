@@ -17,7 +17,9 @@ Imports:
     gsw,
     lubridate,
     purrr,
+    Rcpp,
     readr,
+    seismicRoll,
     stringr,
     xts
 Suggests: 
@@ -26,3 +28,5 @@ Config/testthat/edition: 3
 Depends: 
     R (>= 2.10)
 LazyData: true
+LinkingTo: 
+    Rcpp

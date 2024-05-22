@@ -1,5 +1,7 @@
 # Functions for reading and parsing raw LECS data
 
+# TODO: add option to correct future status dates using met data before adv cor
+
 #' LECS raw file parser
 #'
 #' Parse raw files to a df with row_num and type
@@ -53,8 +55,7 @@ lecs_post_times <- function(df) {
                       'day', 'month', 'year'), as.integer),
            across(c('lat', 'lon'), as.numeric),
            timestamp = lubridate::make_datetime(year, month, day,
-                                     hour, min, sec,
-                                     tz = "America/New_York"),
+                                     hour, min, sec),
            row_count = row_num - lag(row_num)) |>
     select(timestamp, send, row_count)
 }
@@ -80,9 +81,8 @@ lecs_met_data <- function(df) {
            wind_speed = ifelse(wind_speed < 99, wind_speed, NA),
            wind_dir = ifelse(wind_dir < 360, wind_dir, NA),
            timestamp = lubridate::make_datetime(year, month, day,
-                                     hour, min, sec,
-                                     tz = "America/New_York")) |>
-    select(-row_num, -type, -any_of("line"), year, month, day, hour, min, sec)
+                                     hour, min, sec)) |>
+    select(-row_num, -type, -any_of("line"))
 }
 
 #' Clean met data
@@ -92,7 +92,7 @@ lecs_met_data <- function(df) {
 #' @export
 lecs_clean_met <- function(met) {
   met |>
-    filter(timestamp <= "2024-03-01",
+    filter(timestamp <= "2024-06-01",
            #timestamp <= as.POSIXct(Sys.Date()),
            timestamp > "2023-01-01")
 }
@@ -126,11 +126,9 @@ lecs_status_data <- function(df) {
            dplyr::across(c('bat', 'soundspeed',
                            'heading', 'pitch', 'roll') , ~(.x) * .1),
            temp = temp * 0.01,
-           timestamp = lubridate::make_datetime(year, month, day, hour, min, sec,
-                                                tz = "America/New_York"),
+           timestamp = lubridate::make_datetime(year, month, day, hour, min, sec),
            adv_timestamp = lubridate::make_datetime(adv_year + 2000, adv_month, adv_day,
-                                                    adv_hour, adv_min, adv_sec,
-                                                    tz = "America/New_York"))
+                                                    adv_hour, adv_min, adv_sec))
 }
 
 #' Clean status data
@@ -140,16 +138,31 @@ lecs_status_data <- function(df) {
 #' @export
 lecs_clean_status <- function(status) {
   status |>
-    filter(timestamp <= "2024-03-01",
+    filter(timestamp <= "2024-06-01",
            #timestamp <= Sys.Date(),
            timestamp > "2023-01-01",
-           #soundspeed > 1450,
-           adv_day < 32, adv_month > 0, adv_month < 13,
-           adv_min < 61, adv_hour < 24, adv_year < 100) |>
-    select(timestamp, adv_timestamp,
-           bat, soundspeed, heading, pitch, roll, temp,
-           pump_current, pump_voltage, pump_power,
-           year, month, day, hour, min, sec)
+           temp < 30,
+           temp > 0,
+           bat > 9,
+           bat < 20,
+           soundspeed > 1000,
+           soundspeed < 2000,
+           heading == 0,
+           pitch > -500,
+           pitch < 500,
+           roll > -500,
+           roll < 500,
+           adv_day > 0, adv_day < 32,
+           adv_month > 0, adv_month < 13,
+           adv_min >= 0, adv_min < 61,
+           adv_hour >= 0, adv_hour < 24,
+           adv_year > 0, adv_year < 100) |>
+    #select(timestamp, adv_timestamp,
+    #       bat, soundspeed, heading, pitch, roll, temp,
+    #       pump_current, pump_voltage, pump_power) |>
+    mutate(orig_timestamp = timestamp,
+           timestamp = correct_status_timestamp_jitter(orig_timestamp, adv_timestamp),
+           adv_timestamp_cor = correct_status_timestamp_adv(orig_timestamp, adv_timestamp))
 }
 
 #' parse LECS ADV data
@@ -199,9 +212,10 @@ test <- df |>
 #' @export
 lecs_clean_adv_data <- function(adv) {
   adv |>
-    filter(timestamp <= "2024-04-01",
+    filter(#timestamp <= "2024-06-01",
            #timestamp <= Sys.Date(),
-           timestamp > "2023-01-01",
+           #timestamp > "2023-01-01",
+           #!is.na(timestamp),
            !is.na(count),
            count >= 0,
            count < 256,
@@ -209,9 +223,15 @@ lecs_clean_adv_data <- function(adv) {
            #ph_counts < 15000,
            #ph_counts > 5000,
            ) |>
-    select(timestamp, count, pressure, u, v, w, amp1, amp2, amp3,
-           corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO,
-           DO_percent, pH, year, month, day, hour, min, sec)
+    #Replace outliers with NA with rolling Hampel filter
+    # use purrr::possibly to catch findOutliers errors
+    # and replace with original vector
+    mutate(across(c(pressure, u, v, w, amp1, amp2, amp3,
+                  corr1, corr2, corr3, ph_counts, temp, DO),
+                  \(x) replace(x, purrr::possibly(seismicRoll::findOutliers, NULL)(x), NA)))
+    #select(count, pressure, u, v, w, amp1, amp2, amp3,
+    #       corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO,
+    #       DO_percent, pH)
 }
 
 #' Calculate number of missing lines
