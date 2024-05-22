@@ -14,7 +14,7 @@
 #' @export
 correct_status_timestamp_jitter <- function(timestamp, adv_timestamp) {
     timestamp[which(timestamp > Sys.time())] <- NA
-    adv_timestamp[which(timestamp > Sys.time())] <- NA
+    adv_timestamp[which(adv_timestamp > Sys.time())] <- NA
   fix_timestamp_jitter(timestamp, adv_timestamp)
 }
 

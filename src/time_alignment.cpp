@@ -18,7 +18,7 @@ IntegerVector fix_timestamp_jitter(IntegerVector timestamp,
     if (timestamp[i] == timestamp[i - 1]) {
       timestamp[i] = timestamp[i] + 1;
     }
-    if (adv_timestamp[i] == adv_timestamp[i - i] + 1 &&
+    if (adv_timestamp[i] == adv_timestamp[i - 1] + 1 &&
         timestamp[i] == timestamp[i - 1] + 2) {
       timestamp[i] = timestamp[i] - 1;
     }
