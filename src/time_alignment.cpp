@@ -13,15 +13,26 @@ using namespace Rcpp;
 //' @return The corrected timestamp vector
 // [[Rcpp::export]]
 IntegerVector fix_timestamp_jitter(IntegerVector timestamp,
-                                    IntegerVector adv_timestamp) {
-  for (int i = 0; i < timestamp.size(); i++) {
+                                   IntegerVector adv_timestamp) {
+  int n = timestamp.size();
+
+  if (n == 0) return timestamp;  // Handle empty input
+
+  for (int i = 1; i < n; i++) {
+    if (timestamp[i] == NA_INTEGER || timestamp[i-1] == NA_INTEGER ||
+        adv_timestamp[i] == NA_INTEGER || adv_timestamp[i-1] == NA_INTEGER) {
+      continue; // Skip NA values
+    }
+
     if (timestamp[i] == timestamp[i - 1]) {
       timestamp[i] = timestamp[i] + 1;
     }
+
     if (adv_timestamp[i] == adv_timestamp[i - 1] + 1 &&
         timestamp[i] == timestamp[i - 1] + 2) {
       timestamp[i] = timestamp[i] - 1;
     }
   }
+
   return timestamp;
 }

@@ -46,6 +46,33 @@ test_that("correct_status_timestamp_jitter works with all past timestamps", {
   expect_equal(result, c(past_time, past_time))
 })
 
+test_that("correct_status_timestamp_jitter removes duplicate timestamps", {
+  cur_time <- Sys.time()
+  past_time1 <- cur_time - 1
+  past_time2 <- cur_time - 2
+
+  timestamps <- c(past_time2, past_time1, past_time1)
+  adv_timestamps <- c(past_time2, past_time1, cur_time)
+
+  result <- correct_status_timestamp_jitter(timestamps, adv_timestamps)
+
+  expect_equal(length(result), 3)
+  expect_equal(result, c(past_time2, past_time1, cur_time))
+})
+
+test_that("correct_status_timestamp_jitter removes gaps", {
+  cur_time <- Sys.time()
+  past_time1 <- cur_time - 1
+  past_time2 <- cur_time - 2
+
+  timestamps <- c(past_time2, cur_time, cur_time)
+  adv_timestamps <- c(past_time2, past_time1, cur_time)
+
+  result <- correct_status_timestamp_jitter(timestamps, adv_timestamps)
+
+  expect_equal(length(result), 3)
+  expect_equal(result, c(past_time2, past_time1, cur_time))
+})
 test_that("make_lecs_ts() works for 40 lines of data", {
   op <- options(digits.secs=3)
   on.exit(options(op), add = TRUE, after = FALSE)
