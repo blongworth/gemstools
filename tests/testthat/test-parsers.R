@@ -19,6 +19,16 @@ test_that("Cleaning Status works", {
   expect_equal(nrow(status_clean), 10)
 })
 
+test_that("Clean status contains no duplicate timestamps", {
+  df <- lecs_read_file(test_path("test_file.txt"))
+  status <- lecs_status_data(df)
+  status_clean <- lecs_clean_status(status)
+  dups <- status_clean |>
+    dplyr::group_by(timestamp) |>
+    filter(dplyr::n() > 1) |>
+    nrow()
+  expect_true(dups == 0)
+})
 test_that("Parsing Met works", {
   df <- lecs_read_file(test_path("test_file.txt"))
   met <- lecs_met_data(df)
