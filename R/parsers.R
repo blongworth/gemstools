@@ -273,3 +273,21 @@ read_seaphox <- function(file) {
            sal = salinity_psu,
            oxygen = oxygen_ml_l)
 }
+
+#' Read ProOceanus CO2 files
+#'
+#' @param file
+#'
+#' @return a data frame of CO2 data
+#' @export
+read_prooceanus <- function(file) {
+  #find line with "File Contents:", next line is header
+  skipped_lines <- readLines(file) |>
+    stringr::str_detect("File Contents:") |>
+    which()
+  readr::read_csv(file, skip = skipped_lines, comment = "%") |>
+    dplyr::clean_names() |>
+    filter(measurement_type == "W M") |>
+    mutate(dplyr::across(c(month, day, hour, minute, second), as.integer),
+           ts = lubridate::make_datetime(year, month, day, hour, minute, second))
+}
