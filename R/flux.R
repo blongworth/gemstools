@@ -41,3 +41,19 @@ hourly_flux <- function(adv_data, frequency) {
            o_flux = calc_flux(O, w, timestamp, frequency),
            h_flux = calc_flux(H, w, timestamp, frequency))
 }
+
+#' Calculate mean response (spectral power) in a frequency range
+#'
+#' @param quantity Vector of sensor data
+#' @param time Vector of corresponding timestamps
+#' @param frequency Frequency of measurement
+#' @param freq_range Range of frequencies to calc power average
+#'
+#' @return the mean value
+#' @export
+calc_response <- function(quantity, time, frequency, freq_range = c(0.1, 1)) {
+  ts <- xts::as.xts(quantity, order.by = time, frequency = frequency)
+  s <- gsignal::pwelch(ts, fs = frequency)
+  # average spectral power in range
+  mean(s[["spec"]][which(s[["freq"]] %in% freq_range)])
+}
