@@ -291,3 +291,19 @@ read_prooceanus <- function(file) {
     mutate(dplyr::across(c(month, day, hour, minute, second), as.integer),
            ts = lubridate::make_datetime(year, month, day, hour, minute, second))
 }
+
+#' Read Underwater PAR Odyssey files
+#'
+#' @param file
+#'
+#' @return a data frame of PAR data
+#' @export
+lecs_read_par_odyssey <- function(file) {
+  header <- c("scan", "date", "time", "raw_par", "cal_par")
+  read_csv(file, skip = 9, col_names = header) |>
+    mutate(date = as.Date(date, "%d/%m/%Y"),
+           timestamp = lubridate::parse_date_time(paste(date, time),
+                                                  "Ymd HMS",
+                                                  tz = "UTC")) |>
+    select(scan, timestamp, raw_par, cal_par)
+}
