@@ -138,8 +138,8 @@ lecs_status_data <- function(df) {
 #' @export
 lecs_clean_status <- function(status) {
   status |>
-    filter(timestamp <= "2024-06-01",
-           #timestamp <= Sys.Date(),
+    filter(#timestamp <= "2024-07-01",
+           timestamp <= Sys.time(),
            timestamp > "2023-01-01",
            temp < 30,
            temp > 0,
