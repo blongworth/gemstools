@@ -8,7 +8,7 @@ lecs_process_data(
   date = NULL,
   file_dir = NULL,
   files = NULL,
-  out_dir = "",
+  out_dir = ".",
   clean = TRUE,
   dedupe = FALSE,
   resample = FALSE,

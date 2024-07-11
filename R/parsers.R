@@ -92,8 +92,7 @@ lecs_met_data <- function(df) {
 #' @export
 lecs_clean_met <- function(met) {
   met |>
-    filter(timestamp <= "2024-06-01",
-           #timestamp <= as.POSIXct(Sys.Date()),
+    filter(timestamp <= Sys.time(),
            timestamp > "2023-01-01")
 }
 
