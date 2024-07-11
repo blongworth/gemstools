@@ -17,7 +17,7 @@
 lecs_process_data <- function(date = NULL,
                               file_dir = NULL,
                               files = NULL,
-                              out_dir = "",
+                              out_dir = ".",
                               clean = TRUE,
                               dedupe = FALSE,
                               resample = FALSE,
@@ -76,21 +76,24 @@ lecs_process_data <- function(date = NULL,
 
   if (parquet) {
     tictoc::tic("Time to write parquet: ")
+    dir.create(file.path(out_dir, "lecs_met.parquet"))
+    dir.create(file.path(out_dir, "lecs_status.parquet"))
+    dir.create(file.path(out_dir, "lecs_adv_data.parquet"))
     met |>
       arrow::arrow_table() |>
       #dplyr::group_by(year, month) |>
-      arrow::write_dataset(paste0(out_dir, "lecs_met_", date, ".parquet"))
-    message("Wrote: ", paste0(out_dir, "lecs_met_", date, ".parquet"), "\n")
+      arrow::write_dataset(paste0(out_dir, "lecs_met.parquet/met_", date, ".parquet"))
+    message("Wrote: ", paste0(out_dir, "lecs_met.parquet/met_", date, ".parquet"), "\n")
     status |>
       arrow::arrow_table() |>
       #dplyr::group_by(year, month) |>
-      arrow::write_dataset(paste0(out_dir, "lecs_status_", date, ".parquet"))
-    message("Wrote: ", paste0(out_dir, "lecs_status_", date, ".parquet"), "\n")
+      arrow::write_dataset(paste0(out_dir, "lecs_status.parquet/status_", date, ".parquet"))
+    message("Wrote: ", paste0(out_dir, "lecs_status.parquet/status_", date, ".parquet"), "\n")
     adv_data |>
       arrow::arrow_table() |>
       #dplyr::group_by(year, month) |>
-      arrow::write_dataset(paste0(out_dir, "lecs_adv_data_", date, ".parquet"))
-    message("Wrote: ", paste0(out_dir, "lecs_adv_data_", date, ".parquet"), "\n")
+      arrow::write_dataset(paste0(out_dir, "lecs_adv_data.parquet/adv_data_", date, ".parquet"))
+    message("Wrote: ", paste0(out_dir, "lecs_adv_data.parquet/adv_data_", date, ".parquet"), "\n")
     message(tictoc::toc(), "\n")
   }
 }
