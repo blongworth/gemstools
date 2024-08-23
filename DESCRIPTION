@@ -15,6 +15,7 @@ Imports:
     dygraphs,
     furrr,
     gsw,
+    janitor,
     lubridate,
     purrr,
     Rcpp,

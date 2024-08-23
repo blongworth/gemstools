@@ -285,7 +285,7 @@ read_prooceanus <- function(file) {
     stringr::str_detect("File Contents:") |>
     which()
   readr::read_csv(file, skip = skipped_lines, comment = "%") |>
-    dplyr::clean_names() |>
+    janitor::clean_names() |>
     filter(measurement_type == "W M") |>
     mutate(dplyr::across(c(month, day, hour, minute, second), as.integer),
            ts = lubridate::make_datetime(year, month, day, hour, minute, second))
