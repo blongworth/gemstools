@@ -280,13 +280,37 @@ read_seaphox <- function(file) {
 #' @return a data frame of CO2 data
 #' @export
 read_prooceanus <- function(file) {
+  df_names <- c("type", "year", "month", "day", "hour", "minute", "second",
+                "zero_ad", "cur_ad", "co2", "irga_temp", "humidity", "hum_sens_temp",
+                "cell_pressure", "bat_v", "board_temp", "ana_in_1", "ana_in_2",
+                "d_in_1", "d_in_2")
+  df_spec <- readr::cols(
+    type = 'c',
+    year = 'i',
+    month = 'i',
+    day = 'i',
+    hour = 'i',
+    minute = 'i',
+    second = 'i',
+    zero_ad = 'i',
+    cur_ad = 'i',
+    co2 = 'd',
+    irga_temp = 'd',
+    humidity = 'd',
+    hum_sens_temp = 'd',
+    cell_pressure = 'd',
+    bat_v = 'd',
+    board_temp = 'd',
+    ana_in_1 = 'd',
+    ana_in_2 = 'd',
+    d_in_1 = 'd',
+    d_in_2 = 'c'
+  )
   #find line with "File Contents:", next line is header
   skipped_lines <- readLines(file) |>
     stringr::str_detect("File Contents:") |>
-    which()
-  readr::read_csv(file, skip = skipped_lines, comment = "%") |>
-    janitor::clean_names() |>
-    filter(measurement_type == "W M") |>
+    which() + 1
+  readr::read_csv(file, col_names = df_names, col_types = df_spec, skip = skipped_lines, comment = "%") |>
     mutate(dplyr::across(c(month, day, hour, minute, second), as.integer),
            ts = lubridate::make_datetime(year, month, day, hour, minute, second))
 }
