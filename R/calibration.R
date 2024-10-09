@@ -16,17 +16,17 @@
 #'
 #' @examples
 #' # Example parameters
-#' oxygen_ml_L <- 5.0
+#' oxygen_ml_l <- 5.0
 #' absolute_salinity <- 35.0
 #' temperature_celsius <- 25.0
 #' pressure_dbar <- 0
 #'
 #' # Convert oxygen concentration
-#' result <- convert_oxygen_ml_L_to_umol_kg(
-#'   oxygen_ml_L, absolute_salinity, temperature_celsius, pressure_dbar
+#' result <- convert_oxygen_ml_l_to_umol_kg(
+#'   oxygen_ml_l, absolute_salinity, temperature_celsius, pressure_dbar
 #' )
 #' @export
-o2_ml_L_to_umol_kg <- function(oxygen_ml_L,
+o2_ml_l_to_umol_kg <- function(oxygen_ml_l,
                                            absolute_salinity,
                                            temperature_celsius,
                                            pressure_dbar) {
@@ -41,16 +41,16 @@ o2_ml_L_to_umol_kg <- function(oxygen_ml_L,
                            p = pressure_dbar)
 
   # Convert density from kg/m^3 to kg/L
-  density_kg_L <- density_kg_m3 / 1000
+  density_kg_l <- density_kg_m3 / 1000
 
   # Correct molar volume for temperature
   molar_volume_corrected <- molar_volume_O2 * (273.15 + temperature_celsius) / 273.15
 
   # Convert ml/L to μmol/L
-  oxygen_umol_L <- (oxygen_ml_L / molar_volume_corrected) * 1e6
+  oxygen_umol_l <- (oxygen_ml_l / molar_volume_corrected) * 1e3
 
   # Convert μmol/L to μmol/kg using density
-  oxygen_umol_kg <- oxygen_umol_L / density_kg_L
+  oxygen_umol_kg <- oxygen_umol_l / density_kg_l
 
   return(oxygen_umol_kg)
 }
