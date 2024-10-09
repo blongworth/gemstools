@@ -1,5 +1,61 @@
 # Functions for calibrating LECS data
 
+#' Convert Dissolved Oxygen from ml/L to μmol/kg
+#'
+#' This function converts dissolved oxygen concentration from milliliters per liter (ml/L)
+#' to micromoles per kilogram (μmol/kg) using seawater density calculated with the gsw package.
+#'
+#' @param oxygen_ml_L Numeric. Dissolved oxygen concentration in ml/L.
+#' @param absolute_salinity Numeric. Absolute salinity in g/kg.
+#' @param temperature_celsius Numeric. In-situ temperature in degrees Celsius.
+#' @param pressure_dbar Numeric. Sea pressure in decibars.
+#'
+#' @return Numeric. Dissolved oxygen concentration in μmol/kg.
+#'
+#' @importFrom gsw gsw_rho gsw_CT_from_t
+#'
+#' @examples
+#' # Example parameters
+#' oxygen_ml_L <- 5.0
+#' absolute_salinity <- 35.0
+#' temperature_celsius <- 25.0
+#' pressure_dbar <- 0
+#'
+#' # Convert oxygen concentration
+#' result <- convert_oxygen_ml_L_to_umol_kg(
+#'   oxygen_ml_L, absolute_salinity, temperature_celsius, pressure_dbar
+#' )
+#' @export
+o2_ml_L_to_umol_kg <- function(oxygen_ml_L,
+                                           absolute_salinity,
+                                           temperature_celsius,
+                                           pressure_dbar) {
+  # Constants
+  molar_volume_O2 <- 22.391  # L/mol, at STP (0°C, 1 atm)
+
+  # Calculate density using gsw package
+  density_kg_m3 <- gsw::gsw_rho(SA = absolute_salinity,
+                           CT = gsw::gsw_CT_from_t(SA = absolute_salinity,
+                                              t = temperature_celsius,
+                                              p = pressure_dbar),
+                           p = pressure_dbar)
+
+  # Convert density from kg/m^3 to kg/L
+  density_kg_L <- density_kg_m3 / 1000
+
+  # Correct molar volume for temperature
+  molar_volume_corrected <- molar_volume_O2 * (273.15 + temperature_celsius) / 273.15
+
+  # Convert ml/L to μmol/L
+  oxygen_umol_L <- (oxygen_ml_L / molar_volume_corrected) * 1e6
+
+  # Convert μmol/L to μmol/kg using density
+  oxygen_umol_kg <- oxygen_umol_L / density_kg_L
+
+  return(oxygen_umol_kg)
+}
+
+
 #' Calculate O2 concentration
 #'
 #' Uses GSW. Assume sal, pressure, lon, lat if not provided.
