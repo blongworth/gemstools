@@ -1,5 +1,102 @@
 # Functions for calibrating LECS data
 
+#' Convert Percent Oxygen Saturation to Concentration in μmol/L
+#'
+#' This function converts percent oxygen saturation to concentration in μmol/L
+#' using the gsw package to calculate oxygen solubility.
+#'
+#' @param percent_saturation Numeric. Percent oxygen saturation (0-100).
+#' @param temperature_celsius Numeric. In-situ temperature in degrees Celsius.
+#' @param practical_salinity Numeric. Practical salinity (PSU).
+#' @param pressure_dbar Numeric. Sea pressure in decibars.
+#'
+#' @return Numeric. Dissolved oxygen concentration in μmol/L.
+#'
+#' @importFrom gsw gsw_O2sol gsw_SA_from_SP
+#'
+#' @examples
+#' # Example parameters
+#' percent_saturation <- 85
+#' temperature_celsius <- 20
+#' practical_salinity <- 35
+#' pressure_dbar <- 0  # surface pressure
+#'
+#' # Convert oxygen saturation to concentration
+#' o2_sat_to_umol_l(
+#'   percent_saturation, temperature_celsius, practical_salinity, pressure_dbar
+#' )
+#'
+#' @export
+o2_sat_to_umol_l <- function(percent_saturation,
+                             temperature_celsius,
+                             practical_salinity,
+                             pressure_dbar,
+                             longitude = -70,
+                             latitude = 40) {
+  # Convert practical salinity to absolute salinity
+  absolute_salinity <- gsw_SA_from_SP(practical_salinity,
+                                      pressure_dbar,
+                                      longitude,
+                                      latitude)
+
+  #Conservative temp
+  conservative_temp = gsw_CT_from_t(SA = absolute_salinity,
+                     t = temperature_celsius,
+                     p = pressure_dbar)
+
+  # Calculate oxygen solubility in μmol/kg
+  o2_solubility <- gsw_O2sol(SA = absolute_salinity,
+                             CT = conservative_temp,
+                             p = pressure_dbar,
+                             longitude,
+                             latitude)
+
+  # Calculate density to convert from per kg to per L
+  density_kg_m3 <- gsw_rho(SA = absolute_salinity,
+                           CT = conservative_temp,
+                           p = pressure_dbar)
+
+  # Convert solubility from μmol/kg to μmol/L
+  o2_solubility_umol_L <- o2_solubility * (density_kg_m3 / 1000)
+
+  # Calculate actual concentration based on percent saturation
+  o2_concentration_umol_L <- (percent_saturation / 100) * o2_solubility_umol_L
+
+  return(o2_concentration_umol_L)
+}
+
+#' Convert Oxygen Concentration from ml/L to μmol/L
+#'
+#' This function converts dissolved oxygen concentration from milliliters per liter (ml/L)
+#' to micromoles per liter (μmol/L). It accounts for temperature effects on the molar volume of oxygen.
+#'
+#' @param oxygen_ml_L Numeric. Dissolved oxygen concentration in ml/L.
+#' @param temperature_celsius Numeric. Water temperature in degrees Celsius.
+#'
+#' @return Numeric. Dissolved oxygen concentration in μmol/L.
+#'
+#' @examples
+#' # Example parameters
+#' oxygen_ml_L <- 5.0
+#' temperature_celsius <- 25.0
+#'
+#' # Convert oxygen concentration
+#' o2_ml_l_to_umol_l(oxygen_ml_L, temperature_celsius)
+#'
+#' @export
+o2_ml_l_to_umol_l <- function(oxygen_ml_L, temperature_celsius) {
+  # Constants
+  molar_volume_O2_STP <- 22.391  # L/mol, at STP (0°C, 1 atm)
+
+  # Correct molar volume for temperature
+  molar_volume_corrected <- molar_volume_O2_STP * (273.15 + temperature_celsius) / 273.15
+
+  # Convert ml/L to μmol/L
+  oxygen_umol_L <- (oxygen_ml_L / molar_volume_corrected) * 1e3
+
+  return(oxygen_umol_L)
+}
+
 #' Convert Dissolved Oxygen from ml/L to μmol/kg
 #'
 #' This function converts dissolved oxygen concentration from milliliters per liter (ml/L)
@@ -55,8 +152,7 @@ o2_ml_l_to_umol_kg <- function(oxygen_ml_l,
   return(oxygen_umol_kg)
 }
 
-
-#' Calculate O2 concentration
+#' Convert O2 saturation to concentration in umol/kg
 #'
 #' Uses GSW. Assume sal, pressure, lon, lat if not provided.
 #'

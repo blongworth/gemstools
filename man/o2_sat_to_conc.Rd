@@ -2,7 +2,7 @@
 % Please edit documentation in R/calibration.R
 \name{o2_sat_to_conc}
 \alias{o2_sat_to_conc}
-\title{Calculate O2 concentration}
+\title{Convert O2 saturation to concentration in umol/kg}
 \usage{
 o2_sat_to_conc(
   do_percent,
