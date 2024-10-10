@@ -175,7 +175,7 @@ lecs_clean_status <- function(status) {
 #' @export
 #' @importFrom magrittr %>%
 lecs_adv_data <- function(df, rinko_cals) {
-test <- df |>
+df |>
     dplyr::filter(type == "D") |>
     tidyr::separate(data,
                     into = c('count', 'pressure',
@@ -201,7 +201,6 @@ test <- df |>
            DO_percent = cal_ox(DO, temp, rinko_cals),
            ox_umol_l = o2_sat_to_umol_l(DO_percent, temp, practical_salinity=31, pressure),
            pH = cal_ph(ph_counts, temp, ph_cals)
-
     )
 }
 
@@ -227,7 +226,7 @@ lecs_clean_adv_data <- function(adv) {
     # use purrr::possibly to catch findOutliers errors
     # and replace with original vector
     mutate(across(c(pressure, u, v, w, amp1, amp2, amp3,
-                  corr1, corr2, corr3, ph_counts, temp, DO),
+                  corr1, corr2, corr3, ph_counts, temp, DO, DO_percent, ox_umol_l, pH),
                   \(x) replace(x, purrr::possibly(seismicRoll::findOutliers, NULL)(x), NA)))
     #select(count, pressure, u, v, w, amp1, amp2, amp3,
     #       corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO,
