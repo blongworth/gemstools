@@ -199,6 +199,7 @@ test <- df |>
            pressure = pressure / 65536 / 1000, # fix bad pressure data - use only bottom int16
            temp = cal_temp(temp, rinko_cals),
            DO_percent = cal_ox(DO, temp, rinko_cals),
+           ox_umol_l = o2_sat_to_umol_l(DO_percent, temp, practical_salinity=31, pressure),
            pH = cal_ph(ph_counts, temp, ph_cals)
 
     )
