@@ -218,6 +218,8 @@ lecs_parse_file_db <- function(con, file, clean = FALSE) {
 
 #' Read LECS data from file and parse into dataframes
 #'
+#' Runs file parsers, time alignment, and selects columns for output.
+#'
 #' @param file A file path in LECS data format
 #' @param clean Filter bad data and timestamps if true
 #'
@@ -246,15 +248,16 @@ lecs_parse_file <- function(file, clean = FALSE) {
     filter(!is.na(timestamp))
 
   # Select needed data here
+  met <- met |>
+    select(timestamp, PAR, wind_speed, wind_dir)
+
   status <- status |>
     select(timestamp, adv_timestamp,
-           bat, soundspeed, heading, pitch, roll, temp,
-           pump_current, pump_voltage, pump_power)
+           bat, soundspeed, heading, pitch, roll, temp)
 
   adv_data <- adv_data |>
     select(timestamp, pressure, u, v, w, amp1, amp2, amp3,
-           corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO,
-           DO_percent, pH)
+           corr1, corr2, corr3, temp, DO_percent, ox_umol_l, pH)
 
   # Where to fill missing timestamps and impute data?
   # Per file or for entire dataset?

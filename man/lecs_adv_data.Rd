@@ -16,4 +16,5 @@ a dataframe of ADV data
 }
 \description{
 Run time alignment after this
+Final output columns are selected in lecs_parse_file
 }

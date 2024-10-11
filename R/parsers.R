@@ -87,6 +87,8 @@ lecs_met_data <- function(df) {
 
 #' Clean met data
 #'
+#' Final output columns are selected in lecs_parse_file
+#'
 #' @param met
 #'
 #' @export
@@ -132,6 +134,8 @@ lecs_status_data <- function(df) {
 
 #' Clean status data
 #'
+#' Final output columns are selected in lecs_parse_file
+#'
 #' @param status
 #'
 #' @export
@@ -156,17 +160,16 @@ lecs_clean_status <- function(status) {
            adv_min >= 0, adv_min < 61,
            adv_hour >= 0, adv_hour < 24,
            adv_year > 0, adv_year < 100) |>
-    #select(timestamp, adv_timestamp,
-    #       bat, soundspeed, heading, pitch, roll, temp,
-    #       pump_current, pump_voltage, pump_power) |>
     mutate(orig_timestamp = timestamp,
            timestamp = correct_status_timestamp_jitter(orig_timestamp, adv_timestamp),
            adv_timestamp_cor = correct_status_timestamp_adv(orig_timestamp, adv_timestamp))
+  # Final output columns are selected in lecs_parse_file
 }
 
 #' parse LECS ADV data
 #'
 #' Run time alignment after this
+#' Final output columns are selected in lecs_parse_file
 #'
 #' @param df a LECS dataframe with added metadata
 #' @param rinko_cals a list of rinko cal factors for temp and O2
@@ -206,6 +209,8 @@ df |>
 
 #' Clean adv data
 #'
+#' Final output columns are selected in lecs_parse_file
+#'
 #' @param adv
 #'
 #' @export
@@ -228,9 +233,7 @@ lecs_clean_adv_data <- function(adv) {
     mutate(across(c(pressure, u, v, w, amp1, amp2, amp3,
                   corr1, corr2, corr3, ph_counts, temp, DO, DO_percent, ox_umol_l, pH),
                   \(x) replace(x, purrr::possibly(seismicRoll::findOutliers, NULL)(x), NA)))
-    #select(count, pressure, u, v, w, amp1, amp2, amp3,
-    #       corr1, corr2, corr3, ana_in, ana_in2, ph_counts, temp, DO,
-    #       DO_percent, pH)
+  # Final output columns are selected in lecs_parse_file
 }
 
 #' Calculate number of missing lines

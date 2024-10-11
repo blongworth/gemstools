@@ -10,5 +10,5 @@ lecs_clean_status(status)
 \item{status}{}
 }
 \description{
-Clean status data
+Final output columns are selected in lecs_parse_file
 }

@@ -15,5 +15,5 @@ lecs_parse_file(file, clean = FALSE)
 a list containing LECS post_times, met data, status data, and ADV data
 }
 \description{
-Read LECS data from file and parse into dataframes
+Runs file parsers, time alignment, and selects columns for output.
 }

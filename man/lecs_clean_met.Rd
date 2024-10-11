@@ -10,5 +10,5 @@ lecs_clean_met(met)
 \item{met}{}
 }
 \description{
-Clean met data
+Final output columns are selected in lecs_parse_file
 }

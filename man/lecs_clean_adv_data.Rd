@@ -10,5 +10,5 @@ lecs_clean_adv_data(adv)
 \item{adv}{}
 }
 \description{
-Clean adv data
+Final output columns are selected in lecs_parse_file
 }
