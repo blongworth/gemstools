@@ -257,7 +257,7 @@ lecs_parse_file <- function(file, clean = FALSE) {
 
   adv_data <- adv_data |>
     select(timestamp, pressure, u, v, w, amp1, amp2, amp3,
-           corr1, corr2, corr3, temp, DO_percent, ox_umol_l, pH)
+           corr1, corr2, corr3, temp, DO_percent, ph_counts, ox_umol_l, pH)
 
   # Where to fill missing timestamps and impute data?
   # Per file or for entire dataset?

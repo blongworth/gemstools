@@ -231,7 +231,7 @@ lecs_clean_adv_data <- function(adv) {
     # use purrr::possibly to catch findOutliers errors
     # and replace with original vector
     mutate(across(c(pressure, u, v, w, amp1, amp2, amp3,
-                  corr1, corr2, corr3, ph_counts, temp, DO, DO_percent, ox_umol_l, pH),
+                  corr1, corr2, corr3, ph_counts, temp, DO, DO_percent, ph_counts, ox_umol_l, pH),
                   \(x) replace(x, purrr::possibly(seismicRoll::findOutliers, NULL)(x), NA)))
   # Final output columns are selected in lecs_parse_file
 }
