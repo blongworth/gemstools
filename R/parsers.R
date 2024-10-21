@@ -94,8 +94,8 @@ lecs_met_data <- function(df) {
 #' @export
 lecs_clean_met <- function(met) {
   met |>
-    filter(timestamp <= Sys.time(),
-           timestamp > "2023-01-01")
+    filter(timestamp > "2023-03-22",
+           timestamp < "2024-09-28")
 }
 
 #' parse LECS status data
@@ -141,9 +141,8 @@ lecs_status_data <- function(df) {
 #' @export
 lecs_clean_status <- function(status) {
   status |>
-    filter(#timestamp <= "2024-07-01",
-           timestamp <= Sys.time(),
-           timestamp > "2023-01-01",
+    filter(timestamp > "2023-03-22",
+           timestamp < "2024-09-28",
            temp < 30,
            temp > 0,
            bat > 9,
@@ -151,10 +150,10 @@ lecs_clean_status <- function(status) {
            soundspeed > 1000,
            soundspeed < 2000,
            heading == 0,
-           pitch > -500,
-           pitch < 500,
-           roll > -500,
-           roll < 500,
+           pitch > -180,
+           pitch < 180,
+           roll > -180,
+           roll < 180,
            adv_day > 0, adv_day < 32,
            adv_month > 0, adv_month < 13,
            adv_min >= 0, adv_min < 61,
