@@ -215,7 +215,9 @@ df |>
 #' @export
 lecs_clean_adv_data <- function(adv) {
   adv |>
-    filter(#timestamp <= "2024-06-01",
+    tidyr::drop_na() |>
+    filter(
+           #timestamp <= "2024-06-01",
            #timestamp <= Sys.Date(),
            #timestamp > "2023-01-01",
            #!is.na(timestamp),
