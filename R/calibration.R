@@ -248,8 +248,7 @@ generate_ph_model <- function(seaphox_data, lecs_data) {
            timestamp < max_sp) |>
     mutate(timestamp = lubridate::floor_date(timestamp, "minute")) |>
     dplyr::group_by(timestamp) |>
-    dplyr::summarise(timestamp = mean(timestamp),
-                     lecs_ph_counts = mean(ph_counts),
+    dplyr::summarise(lecs_ph_counts = mean(ph_counts),
                      lecs_temp = mean(temp)) |>
     dplyr::collect()
 
