@@ -221,16 +221,9 @@ lecs_clean_adv_data <- function(adv) {
   adv |>
     tidyr::drop_na() |>
     filter(
-           #timestamp <= "2024-06-01",
-           #timestamp <= Sys.Date(),
-           #timestamp > "2023-01-01",
-           #!is.na(timestamp),
            !is.na(count),
            count >= 0,
            count < 256,
-           #ana_in2 == 1,
-           #ph_counts < 15000,
-           #ph_counts > 5000,
            ) |>
     #Replace outliers with NA with rolling Hampel filter
     # use purrr::possibly to catch findOutliers errors
