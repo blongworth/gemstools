@@ -262,8 +262,9 @@ lecs_parse_file <- function(file, clean = FALSE) {
   if (clean) {
     # select only the first row when there are duplicate timestamps
     adv_data <- adv_data |>
-      group_by(timestamp) |>
-      slice(1)
+      dplyr::group_by(timestamp) |>
+      dplyr::slice(1) |>
+      dplyr::ungroup()
   }
   # Where to fill missing timestamps and impute data?
   # Per file or for entire dataset?
