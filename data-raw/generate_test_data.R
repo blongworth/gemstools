@@ -23,8 +23,9 @@ adv <- readRDS(test_path("adv_df_dec.rds"))
 write_parquet(adv, test_path("adv.parquet"))
 
 # Shift time of manually timestamped adv data
+# Also tests manual correction of EST/DST
 adv_ts_40 <- readRDS(test_path("adv_ts_40_EST.rds")) |>
-  mutate(timestamp = timestamp + 3600 * 4) # Adjust to match TZ=UTC
+  mutate(timestamp = timestamp + 3600 * 5) # Adjust to match TZ=UTC
 
 saveRDS(adv_ts_40, test_path("adv_ts_40.rds"))
 

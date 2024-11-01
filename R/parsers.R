@@ -56,7 +56,12 @@ lecs_post_times <- function(df) {
            across(c('lat', 'lon'), as.numeric),
            timestamp = lubridate::make_datetime(year, month, day,
                                      hour, min, sec, tz = "UTC"),
-           timestamp = timestamp + 3600 * 4, # convert to UTC
+           # Convert to UTC. Handle EST/EDT
+           timestamp = dplyr::if_else(timestamp > "2023-11-15 11:00:00" &
+                                 timestamp < "2024-03-13 00:00:00",
+                               timestamp + 5 * 3600,
+                               timestamp + 4 * 3600
+                               ),
            row_count = row_num - lag(row_num)) |>
     select(timestamp, send, row_count)
 }
@@ -83,7 +88,13 @@ lecs_met_data <- function(df) {
            wind_dir = ifelse(wind_dir < 360, wind_dir, NA),
            timestamp = lubridate::make_datetime(year, month, day,
                                      hour, min, sec, tz = "UTC"),
-           timestamp = timestamp + 4 * 3600) |>
+           # Convert to UTC. Handle EST/EDT
+           timestamp = dplyr::if_else(timestamp > "2023-11-15 11:00:00" &
+                                 timestamp < "2024-03-13 00:00:00",
+                               timestamp + 5 * 3600,
+                               timestamp + 4 * 3600
+                               )
+                              )|>
     select(-row_num, -type, -any_of("line"))
 }
 
@@ -130,7 +141,12 @@ lecs_status_data <- function(df) {
                            'heading', 'pitch', 'roll') , ~(.x) * .1),
            temp = temp * 0.01,
            timestamp = lubridate::make_datetime(year, month, day, hour, min, sec, tz = "UTC"),
-           timestamp = timestamp + 3600 * 4, # convert to UTC
+           # Convert to UTC. Handle EST/EDT
+           timestamp = dplyr::if_else(timestamp > "2023-11-15 11:00:00" &
+                                 timestamp < "2024-03-13 00:00:00",
+                               timestamp + 5 * 3600,
+                               timestamp + 4 * 3600
+                               ),
            adv_timestamp = lubridate::make_datetime(adv_year + 2000, adv_month, adv_day,
                                                     adv_hour, adv_min, adv_sec, tz = "UTC"),
            adv_timestamp = adv_timestamp + 3600 * 4) # convert to UTC
