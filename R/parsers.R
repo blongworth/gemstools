@@ -240,7 +240,30 @@ lecs_clean_adv_data <- function(adv) {
            !is.na(count),
            count >= 0,
            count < 256,
-           ) |>
+           pressure > 0.4,
+           pressure < 2.6,
+           temp > 1.6,
+           temp < 26,
+           corr1 <= 100,
+           corr2 <= 100,
+           corr3 <= 100,
+           !is.na(u),
+           !is.na(v),
+           !is.na(w),
+           !is.na(corr1),
+           !is.na(corr2),
+           !is.na(corr3),
+           !is.na(amp1),
+           !is.na(amp2),
+           !is.na(amp3),
+           # filter velocities to remove impossible velocities
+           u > -10, u < 10,
+           v > -10, v < 10,
+           w > -2, w < 2,
+           pH > 7.18,
+           pH < 8.6,
+           ox_umol_l < 400,
+           ox_umol_l > 80) |>
     #Replace outliers with NA with rolling Hampel filter
     # use purrr::possibly to catch findOutliers errors
     # and replace with original vector
