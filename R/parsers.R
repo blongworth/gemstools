@@ -257,9 +257,9 @@ lecs_clean_adv_data <- function(adv) {
            !is.na(amp2),
            !is.na(amp3),
            # filter velocities to remove impossible velocities
-           u > -10, u < 10,
-           v > -10, v < 10,
-           w > -2, w < 2,
+           u > -1, u < 1,
+           v > -1, v < 1,
+           w > -0.2, w < 0.2,
            pH > 7.18,
            pH < 8.6,
            ox_umol_l < 400,

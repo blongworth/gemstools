@@ -11,12 +11,14 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports:
+    data.table,
     dplyr,
     dygraphs,
     furrr,
     gsw,
     janitor,
     lubridate,
+    magrittr,
     purrr,
     Rcpp,
     readr,
