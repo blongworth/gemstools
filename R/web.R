@@ -3,15 +3,18 @@
 #' Reads HTML table from LECS_data into a single column data frame
 #'
 #' @param start_date Date to get date from. Date object or string coerceable
+#' @param base_url URL to query. Defaults to WHOI LECS data
 #' to a date
 #' @return a single column data frame
 #' @export
 #'
-lecs_read_web <- function(start_date = NULL) {
+lecs_read_web <- function(start_date = NULL, base_url = NULL) {
   if ( is.null(start_date) ) {
     start_date = Sys.Date()
   }
-  base_url <- "https://gems.whoi.edu/LECS_data/?timestamp="
+  if (is.null(base_url)) {
+    base_url <- "https://gems.whoi.edu/LECS_data/?timestamp="
+  }
   query_url <- paste0(base_url, format(as.Date(start_date), "%Y%m%d%H"))
   df <- xml2::read_html(query_url) |>
     rvest::html_node("table") |>
