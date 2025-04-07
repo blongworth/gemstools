@@ -12,6 +12,6 @@
 #' @param adv_timestamp A vector of adv status timestamps
 #' @return The corrected timestamp vector
 fix_timestamp_jitter <- function(timestamp, adv_timestamp) {
-    .Call(`_mlabtools_fix_timestamp_jitter`, timestamp, adv_timestamp)
+    .Call(`_gemstools_fix_timestamp_jitter`, timestamp, adv_timestamp)
 }
 

@@ -4,12 +4,10 @@
 \alias{lecs_adv_data}
 \title{parse LECS ADV data}
 \usage{
-lecs_adv_data(df, rinko_cals)
+lecs_adv_data(df)
 }
 \arguments{
 \item{df}{a LECS dataframe with added metadata}
-
-\item{rinko_cals}{a list of rinko cal factors for temp and O2}
 }
 \value{
 a dataframe of ADV data

@@ -4,6 +4,6 @@
 NULL
 
 ## usethis namespace: start
-#' @useDynLib mlabtools, .registration = TRUE
+#' @useDynLib gemstools, .registration = TRUE
 ## usethis namespace: end
 NULL

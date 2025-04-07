@@ -1,5 +1,5 @@
-Package: mlabtools
-Title: Tools for working with MachineLab Data
+Package: gemstools
+Title: Tools for working with MachineLab GEMS Data
 Version: 0.0.0.9000
 Authors@R: 
     person("Brett", "Longworth", , "blongworth@whoi.edu", role = c("aut", "cre"),

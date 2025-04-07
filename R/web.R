@@ -13,7 +13,7 @@ lecs_read_web <- function(start_date = NULL, base_url = NULL) {
     start_date = Sys.Date()
   }
   if (is.null(base_url)) {
-    base_url <- "https://gems.whoi.edu/LECS_data/?timestamp="
+    base_url <- "https://gems.whoi.edu/GEMS_data/?timestamp="
   }
   query_url <- paste0(base_url, format(as.Date(start_date), "%Y%m%d%H"))
   df <- xml2::read_html(query_url) |>

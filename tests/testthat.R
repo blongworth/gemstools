@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 
 library(testthat)
-library(mlabtools)
+library(gemstools)
 
-test_check("mlabtools")
+test_check("gemstools")

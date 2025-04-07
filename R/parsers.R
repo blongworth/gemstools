@@ -128,6 +128,26 @@ lecs_clean_met <- function(met) {
            timestamp < "2024-09-28")
 }
 
+gems_turbo_status <- function(df) {
+  df |>
+    dplyr::filter(type == "!") |>
+    tidyr::separate(data,
+                    into = c('timestamp',
+                             'status', 'speed', 'power',
+                             'voltage', 'e_temp', 'p_temp',
+                             'm_temp', 'filament'),
+                    sep = ',') |>
+    dplyr::mutate(timestamp = lubridate::ymd_hms(timestamp),
+                  status = as.integer(status),
+                  speed = as.integer(speed), # Hz
+                  power = as.integer(power), # Watts
+                  voltage = as.integer(voltage), # Volts
+                  e_temp = as.integer(e_temp), # Electronics C
+                  p_temp = as.integer(p_temp), # Pump C
+                  m_temp = as.integer(m_temp), # Motor C
+                  filament = as.numeric(filament)) # Amps
+}
+
 #' parse LECS status data
 #'
 #' @param df a LECS dataframe with added metadata
@@ -138,35 +158,24 @@ lecs_status_data <- function(df) {
   df |>
     dplyr::filter(type == "S") |>
     tidyr::separate(data,
-                    into = c('hour', 'min', 'sec', 'day', 'month', 'year',
+                    into = c('timestamp',
                              'adv_min', 'adv_sec', 'adv_day',
                              'adv_hour', 'adv_year', 'adv_month',
                              'bat', 'soundspeed', 'heading', 'pitch',
-                             'roll', 'temp',
-                             'pump_current', 'pump_voltage', 'pump_power'),
+                             'roll', 'temp'),
                     sep = ',') |>
-    mutate(pump_power = stringr::str_sub(pump_power, 1, 5),
-           dplyr::across(c('hour', 'min', 'day', 'month', 'year',
-                           'adv_min', 'adv_day',
+    mutate(dplyr::across(c('adv_min', 'adv_day',
                            'adv_hour', 'adv_year', 'adv_month'),
                          as.integer),
-           dplyr::across(c('sec', 'adv_sec',
+           dplyr::across(c('adv_sec',
                            'bat', 'soundspeed', 'heading', 'pitch',
-                           'roll', 'temp',
-                           'pump_current', 'pump_voltage', 'pump_power'), as.numeric),
+                           'roll', 'temp',), as.numeric),
            dplyr::across(c('bat', 'soundspeed',
                            'heading', 'pitch', 'roll') , ~(.x) * .1),
            temp = temp * 0.01,
-           timestamp = lubridate::make_datetime(year, month, day, hour, min, sec, tz = "UTC"),
-           # Convert to UTC. Handle EST/EDT
-           timestamp = dplyr::if_else(timestamp > "2023-11-15 11:00:00" &
-                                 timestamp < "2024-03-13 00:00:00",
-                               timestamp + 5 * 3600,
-                               timestamp + 4 * 3600
-                               ),
+           timestamp = lubridate::ymd_hms(timestamp),
            adv_timestamp = lubridate::make_datetime(adv_year + 2000, adv_month, adv_day,
-                                                    adv_hour, adv_min, adv_sec, tz = "UTC"),
-           adv_timestamp = adv_timestamp + 3600 * 4) # convert to UTC
+                                                    adv_hour, adv_min, adv_sec, tz = "UTC"))
 }
 
 #' Clean status data
@@ -178,8 +187,8 @@ lecs_status_data <- function(df) {
 #' @export
 lecs_clean_status <- function(status) {
   status |>
-    filter(timestamp > "2023-03-22",
-           timestamp < "2024-09-28",
+    filter(timestamp > "2024-03-22",
+           timestamp < "2025-09-28",
            temp < 30,
            temp > 0,
            bat > 9,
@@ -208,12 +217,11 @@ lecs_clean_status <- function(status) {
 #' Final output columns are selected in lecs_parse_file
 #'
 #' @param df a LECS dataframe with added metadata
-#' @param rinko_cals a list of rinko cal factors for temp and O2
 #'
 #' @return a dataframe of ADV data
 #' @export
 #' @importFrom magrittr %>%
-lecs_adv_data <- function(df, rinko_cals) {
+lecs_adv_data <- function(df) {
 df |>
     dplyr::filter(type == "D") |>
     tidyr::separate(data,
@@ -221,13 +229,9 @@ df |>
                              'u', 'v', 'w',
                              'amp1', 'amp2', 'amp3',
                              'corr1', 'corr2', 'corr3',
-                             'ana_in', 'ana_in2', 'ph_counts',
-                             'temp', 'DO'),
+                             'ana_in', 'ana_in2', 'ph_counts'),
                     sep = ',') |>
-    mutate(DO = stringr::str_sub(DO, 1, 10),
-           dplyr::across(c('pressure',
-                           'temp', 'DO'),
-                         as.numeric),
+    mutate(pressure = as.numeric(pressure),
            dplyr::across(c('count',
                              'u', 'v', 'w',
                              'amp1', 'amp2', 'amp3',
@@ -238,11 +242,7 @@ df |>
            # 1 count = 0.0001 m/s for low range
            # should define this elsewhere!
            dplyr::across(c('u', 'v', 'w'), ~(.x) * .0001),
-           pressure = pressure / 65536 / 1000, # fix bad pressure data - use only bottom int16
-           temp = cal_temp(temp, rinko_cals),
-           DO_percent = cal_ox(DO, temp, rinko_cals),
-           ox_umol_l = o2_sat_to_umol_l(DO_percent, temp, practical_salinity=31, pressure),
-           pH = cal_ph(ph_counts, temp, ph_cals)
+           pressure = pressure / 1000,
     )
 }
 
@@ -279,14 +279,11 @@ lecs_clean_adv_data <- function(adv) {
            # filter velocities to remove impossible velocities
            u > -20, u < 20,
            v > -20, v < 20,
-           w > -4, w < 4,
-           pH > 7.18,
-           pH < 8.6,
-           ox_umol_l < 400,
-           ox_umol_l > 80) |>
+           w > -4, w < 4) |>
     #Replace outliers with NA with rolling Hampel filter
     # use purrr::possibly to catch findOutliers errors
     # and replace with original vector
+    # TODO: change this to flag outliers
     mutate(across(c(pressure, u, v, w, amp1, amp2, amp3,
                   corr1, corr2, corr3, ph_counts, temp, DO, DO_percent, ph_counts, ox_umol_l, pH),
                   \(x) replace(x, purrr::possibly(seismicRoll::findOutliers, NULL)(x), NA)))

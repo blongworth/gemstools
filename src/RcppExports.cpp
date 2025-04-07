@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // fix_timestamp_jitter
 IntegerVector fix_timestamp_jitter(IntegerVector timestamp, IntegerVector adv_timestamp);
-RcppExport SEXP _mlabtools_fix_timestamp_jitter(SEXP timestampSEXP, SEXP adv_timestampSEXP) {
+RcppExport SEXP _gemstools_fix_timestamp_jitter(SEXP timestampSEXP, SEXP adv_timestampSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -24,11 +24,11 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_mlabtools_fix_timestamp_jitter", (DL_FUNC) &_mlabtools_fix_timestamp_jitter, 2},
+    {"_gemstools_fix_timestamp_jitter", (DL_FUNC) &_gemstools_fix_timestamp_jitter, 2},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_mlabtools(DllInfo *dll) {
+RcppExport void R_init_gemstools(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
