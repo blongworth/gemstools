@@ -30,10 +30,10 @@ lecs_read_file <- function(file) {
 lecs_add_metadata <- function(df_raw) {
   df_raw |>
     mutate(row_num = dplyr::row_number(),
-           type = stringr::str_match(X1, "\\[\\d+\\]([DMS$!]):?")[,2],
+           type = stringr::str_match(X1, "\\[\\d+\\]([RGDMS$!]):?")[,2],
            send = cumsum(type == "$"),
-           line = as.integer(stringr::str_match(X1, "\\[(\\d+)\\][DMS$!]:?")[,2]),
-           data = stringr::str_remove(X1, "\\[\\d+\\][DMS$!]:?")) |>
+           line = as.integer(stringr::str_match(X1, "\\[(\\d+)\\][RGDMS$!]:?")[,2]),
+           data = stringr::str_remove(X1, "\\[\\d+\\][RGDMS$!]:?")) |>
     select(row_num, send, type, line, data)
 }
 
@@ -64,6 +64,23 @@ lecs_post_times <- function(df) {
                                ),
            row_count = row_num - lag(row_num)) |>
     select(timestamp, send, row_count)
+}
+
+#' parse RGA data
+#'
+#' @param df a dataframe with added metadata
+#'
+#' @return a dataframe of RGA data
+#' @export
+gems_rga_data <- function(df) {
+  df |>
+    dplyr::filter(type == "R") |>
+    tidyr::separate(data,
+                    into = c('timestamp', 'mass', 'current'),
+                    sep = ',') |>
+    mutate(across(c('mass', 'current'), as.integer),
+           timestamp = lubridate::ymd_hms(timestamp),
+    )
 }
 
 #' parse LECS met data
@@ -217,7 +234,10 @@ df |>
                              'corr1', 'corr2', 'corr3',
                            'ana_in', 'ana_in2', 'ph_counts'),
                          as.integer),
-           dplyr::across(c('u', 'v', 'w'), ~(.x) * .001),
+           # scale velocity to m/s. 1 count = 0.001 m/s for high range
+           # 1 count = 0.0001 m/s for low range
+           # should define this elsewhere!
+           dplyr::across(c('u', 'v', 'w'), ~(.x) * .0001),
            pressure = pressure / 65536 / 1000, # fix bad pressure data - use only bottom int16
            temp = cal_temp(temp, rinko_cals),
            DO_percent = cal_ox(DO, temp, rinko_cals),
@@ -235,7 +255,7 @@ df |>
 #' @export
 lecs_clean_adv_data <- function(adv) {
   adv |>
-    tidyr::drop_na() |>
+    #tidyr::drop_na() |>
     filter(
            !is.na(count),
            count >= 0,
@@ -257,9 +277,9 @@ lecs_clean_adv_data <- function(adv) {
            !is.na(amp2),
            !is.na(amp3),
            # filter velocities to remove impossible velocities
-           u > -1, u < 1,
-           v > -1, v < 1,
-           w > -0.2, w < 0.2,
+           u > -20, u < 20,
+           v > -20, v < 20,
+           w > -4, w < 4,
            pH > 7.18,
            pH < 8.6,
            ox_umol_l < 400,
