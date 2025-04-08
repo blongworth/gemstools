@@ -29,12 +29,16 @@ lecs_read_file <- function(file) {
 #' @export
 lecs_add_metadata <- function(df_raw) {
   df_raw |>
-    mutate(row_num = dplyr::row_number(),
+    mutate(row_num_i = dplyr::row_number(),
            type = stringr::str_match(X1, "\\[\\d+\\]([RGDMS$!]):?")[,2],
            send = cumsum(type == "$"),
            line = as.integer(stringr::str_match(X1, "\\[(\\d+)\\][RGDMS$!]:?")[,2]),
            data = stringr::str_remove(X1, "\\[\\d+\\][RGDMS$!]:?")) |>
-    select(row_num, send, type, line, data)
+    select(row_num_i, send, type, line, data) |>
+    group_by(send) |>
+    arrange(line, .by_group = TRUE) |>
+    ungroup() |>
+    mutate(row_num = dplyr::row_number())
 }
 
 #' parse LECS post times
@@ -46,22 +50,7 @@ lecs_add_metadata <- function(df_raw) {
 lecs_post_times <- function(df) {
   df |>
     dplyr::filter(type == "$") |>
-    tidyr::separate(data,
-             into = c('hour', 'min', 'sec',
-                      'day', 'month', 'year',
-                      'lat', 'lon'),
-             sep = ',') |>
-    mutate(across(c('hour', 'min', 'sec',
-                      'day', 'month', 'year'), as.integer),
-           across(c('lat', 'lon'), as.numeric),
-           timestamp = lubridate::make_datetime(year, month, day,
-                                     hour, min, sec, tz = "UTC"),
-           # Convert to UTC. Handle EST/EDT
-           timestamp = dplyr::if_else(timestamp > "2023-11-15 11:00:00" &
-                                 timestamp < "2024-03-13 00:00:00",
-                               timestamp + 5 * 3600,
-                               timestamp + 4 * 3600
-                               ),
+    mutate(timestamp = lubridate::ymd_hms(data),
            row_count = row_num - lag(row_num)) |>
     select(timestamp, send, row_count)
 }
@@ -306,7 +295,7 @@ lecs_missing <- function(count, line = NULL) {
                                TRUE ~
                                  255L + count - dplyr::lag(count))
   if (!is.null(line)) {
-    missing = replace(missing, line == 1, NA)
+    missing = replace(missing, lag(line, 2L) != line - 2L, NA)
   }
   missing
 }
