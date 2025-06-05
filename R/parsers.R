@@ -117,6 +117,12 @@ lecs_clean_met <- function(met) {
            timestamp < "2024-09-28")
 }
 
+#' parse GEMS turbo status data
+#'
+#' @param df a GEMS dataframe with added metadata
+#'
+#' @return a dataframe of status data
+#' @export
 gems_turbo_status <- function(df) {
   df |>
     dplyr::filter(type == "!") |>
@@ -130,7 +136,7 @@ gems_turbo_status <- function(df) {
                   status = as.integer(status),
                   speed = as.integer(speed), # Hz
                   power = as.integer(power), # Watts
-                  voltage = as.integer(voltage), # Volts
+                  voltage = as.integer(voltage) / 100, # Volts
                   e_temp = as.integer(e_temp), # Electronics C
                   p_temp = as.integer(p_temp), # Pump C
                   m_temp = as.integer(m_temp), # Motor C
@@ -295,7 +301,7 @@ lecs_missing <- function(count, line = NULL) {
                                TRUE ~
                                  255L + count - dplyr::lag(count))
   if (!is.null(line)) {
-    missing = replace(missing, lag(line, 2L) != line - 2L, NA)
+    missing = replace(missing, missing > 0 & lag(line) != line - 1L, NA)
   }
   missing
 }
