@@ -22,6 +22,7 @@ Imports:
     purrr,
     Rcpp,
     readr,
+    rvest,
     seismicRoll,
     stringr,
     xts
