@@ -30,10 +30,10 @@ lecs_read_file <- function(file) {
 lecs_add_metadata <- function(df_raw) {
   df_raw |>
     mutate(row_num_i = dplyr::row_number(),
-           type = stringr::str_match(X1, "\\[\\d+\\]([RGDMS$!]):?")[,2],
+           type = stringr::str_match(X1, "\\[\\d+\\]([RGDMST$!]):?")[,2],
            send = cumsum(type == "$"),
-           line = as.integer(stringr::str_match(X1, "\\[(\\d+)\\][RGDMS$!]:?")[,2]),
-           data = stringr::str_remove(X1, "\\[\\d+\\][RGDMS$!]:?")) |>
+           line = as.integer(stringr::str_match(X1, "\\[(\\d+)\\][RGDMST$!]:?")[,2]),
+           data = stringr::str_remove(X1, "\\[\\d+\\][RGDMST$!]:?")) |>
     select(row_num_i, send, type, line, data) |>
     group_by(send) |>
     arrange(line, .by_group = TRUE) |>
@@ -53,6 +53,21 @@ lecs_post_times <- function(df) {
     mutate(timestamp = lubridate::ymd_hms(data),
            row_count = row_num - lag(row_num)) |>
     select(timestamp, send, row_count)
+}
+
+#' parse surface teensy temp
+#'
+#' @param df a dataframe with added metadata
+#' @return a dataframe of surface teensy temp data
+#' @export
+gems_temp_data <- function(df) {
+  df |>
+    dplyr::filter(type == "T") |>
+    tidyr::separate(data,
+                    into = c('timestamp', 'temp'),
+                    sep = ',') |>
+    mutate(timestamp = lubridate::ymd_hms(timestamp),
+           temp = as.numeric(temp))
 }
 
 #' parse RGA data
