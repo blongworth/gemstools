@@ -32,7 +32,7 @@ gems_process_data <- function(date = NULL,
   }
 
   if (is.null(files)) {
-    files <- list.files(file_dir, pattern = "^202[5]", full.names = TRUE)
+    files <- list.files(file_dir, pattern = "^gems_202[5]", full.names = TRUE)
   }
 
   message(paste(length(files), "files to process"))
@@ -116,9 +116,9 @@ gems_parse_files <- function(files, clean = FALSE) {
 #'
 gems_parse_file <- function(file, clean = FALSE) {
   df <- gems_read_file(file)
-  rga <- gems_rga(df)
+  rga <- gems_rga_data(df)
   status <- gems_status_data(df)
-  adv_data <- gems_adv_data(df, rinko_cals)
+  adv_data <- gems_adv_data(df)
 
   if (clean) {
     rga <- gems_clean_rga(rga)

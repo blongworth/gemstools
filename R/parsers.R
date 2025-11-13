@@ -91,6 +91,9 @@ gems_rga_data <- function(df) {
     ) |>
     mutate(across(c("mass", "current"), as.integer),
       timestamp = lubridate::ymd_hms(timestamp),
+      mass = as.factor(mass),
+      current = current*1E-16,
+      pressure = current/0.0801
     )
 }
 
@@ -180,8 +183,8 @@ gems_status_data <- function(df) {
 gems_clean_status <- function(status) {
   status |>
     filter(
-      timestamp > "2024-03-22",
-      timestamp < "2025-09-28",
+      timestamp > "2025-06-01",
+      timestamp < "2025-10-24",
       temp < 30,
       temp > 0,
       bat > 9,
@@ -226,7 +229,7 @@ gems_adv_data <- function(df) {
         "u", "v", "w",
         "amp1", "amp2", "amp3",
         "corr1", "corr2", "corr3",
-        "ana_in", "ana_in2"
+        "ana_in", "ana_in2", "unk"
       ),
       sep = ","
     ) |>
@@ -238,7 +241,7 @@ gems_adv_data <- function(df) {
           "u", "v", "w",
           "amp1", "amp2", "amp3",
           "corr1", "corr2", "corr3",
-          "ana_in", "ana_in2"
+          "ana_in", "ana_in2", "unk"
         ),
         as.integer
       ),
