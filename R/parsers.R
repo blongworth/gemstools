@@ -97,6 +97,27 @@ gems_rga_data <- function(df) {
     )
 }
 
+
+#' clean RGA data
+#'
+#' Final output columns are selected in gems_parse_file
+#'
+#' @param rga
+#'
+#' @return cleaned RGA data
+#' @export
+gems_clean_rga <- function(rga) {
+  rga |>
+    filter(
+      timestamp > "2025-06-01",
+      timestamp < "2025-10-24",
+      #current >= 0,
+      #current < 1E-12,
+      #pressure >= 0,
+      #pressure < 1E-10
+    )
+}
+
 #' parse GEMS turbo status data
 #'
 #' @param df a GEMS dataframe with added metadata
