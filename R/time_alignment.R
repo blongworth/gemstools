@@ -36,7 +36,7 @@ correct_status_timestamp_adv <- function(timestamp, adv_timestamp) {
   adv_timestamp + offset
 }
 
-#' Apply timestamps to LECS ADV data
+#' Apply timestamps to GEMS ADV data
 #'
 #' Version from R2evans on stack overflow
 #'
@@ -46,7 +46,7 @@ correct_status_timestamp_adv <- function(timestamp, adv_timestamp) {
 #' @return ADV data with timestamps added
 #' @export
 #' @importFrom dplyr filter select mutate
-make_lecs_ts <- function(adv_data, status) {
+make_gems_ts <- function(adv_data, status) {
   if ("send" %in% names(status)) {
     df <- adv_data |>
       mutate(timestamp = as.POSIXct(NA)) |>
@@ -78,9 +78,9 @@ make_lecs_ts <- function(adv_data, status) {
       newtimestamp = dplyr::case_when(
         !is.na(timestamp) ~ timestamp,
         is.na(prevtime) | count2 - dplyr::lag(count2) > 2 ~
-          nexttime + (count2 - nextind)/16,
+          nexttime + (count2 - nextind)/8,
         TRUE ~
-          prevtime + (count2 - prevind)/16
+          prevtime + (count2 - prevind)/8
       )
     ) |>
     dplyr::ungroup() |>
