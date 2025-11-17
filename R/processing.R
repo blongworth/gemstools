@@ -136,10 +136,21 @@ gems_parse_file <- function(file, clean = FALSE) {
   status <- gems_status_data(df)
   adv_data <- gems_adv_data(df)
 
+  # Check if any data type is missing
+  if (nrow(rga) == 0) {
+    warning(paste("File", file, "contains no RGA data"))
+  }
+  if (nrow(status) == 0) {
+    warning(paste("File", file, "contains no status data"))
+  }
+  if (nrow(adv_data) == 0) {
+    warning(paste("File", file, "contains no ADV data"))
+  }
+
   if (clean) {
-    rga <- gems_clean_rga(rga)
-    status <- gems_clean_status(status)
-    adv_data <- gems_clean_adv_data(adv_data)
+    if (nrow(rga) > 0) rga <- gems_clean_rga(rga)
+    if (nrow(status) > 0) status <- gems_clean_status(status)
+    if (nrow(adv_data) > 0) adv_data <- gems_clean_adv_data(adv_data)
   }
 
   # Status timestamps fixed during cleaning
@@ -147,27 +158,35 @@ gems_parse_file <- function(file, clean = FALSE) {
   # Needs to keep row/count info
   # remove garbage NA timestamps after
 
-  adv_data <- adv_data |>
-    make_gems_ts(status) |>
-    filter(!is.na(timestamp))
+  # Only process ADV timestamps if both status and adv_data exist
+  if (nrow(adv_data) > 0 && nrow(status) > 0) {
+    adv_data <- adv_data |>
+      make_gems_ts(status) |>
+      filter(!is.na(timestamp))
+  }
 
-  # Select needed data here
-  rga <- rga |>
+  # Select needed data here - only if columns exist
+  if (nrow(rga) > 0) {
+    rga <- rga |>
     select(timestamp, mass, current, pressure)
+  }
+  if (nrow(status) > 0) {
+    status <- status |>
+      select(
+        timestamp, adv_timestamp,
+        bat, soundspeed, heading, pitch, roll, temp
+      )
+  }
 
-  status <- status |>
-    select(
-      timestamp, adv_timestamp,
-      bat, soundspeed, heading, pitch, roll, temp
-    )
+  if (nrow(adv_data) > 0) {
+    adv_data <- adv_data |>
+      select(
+        timestamp, pressure, u, v, w, amp1, amp2, amp3,
+        corr1, corr2, corr3
+      )
+  }
 
-  adv_data <- adv_data |>
-    select(
-      timestamp, pressure, u, v, w, amp1, amp2, amp3,
-      corr1, corr2, corr3
-    )
-
-  if (clean) {
+  if (clean && nrow(adv_data) > 0) {
     # select only the first row when there are duplicate timestamps
     adv_data <- adv_data |>
       dplyr::group_by(timestamp) |>
