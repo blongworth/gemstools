@@ -122,6 +122,15 @@ gems_parse_files <- function(files, clean = FALSE) {
 #' @export
 #'
 gems_parse_file <- function(file, clean = FALSE) {
+  # handle empty files
+  if (file.info(file)$size == 0) {
+    warning(paste("File", file, "is empty. Skipping."))
+    return(list(
+      rga = data.frame(),
+      status = data.frame(),
+      adv_data = data.frame()
+    ))
+  }
   df <- gems_read_file(file)
   rga <- gems_rga_data(df)
   status <- gems_status_data(df)
