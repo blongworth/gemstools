@@ -35,6 +35,10 @@ gems_process_data <- function(date = NULL,
     files <- list.files(file_dir, pattern = "^gems_202[5]", full.names = TRUE)
   }
 
+  if (!length(files)) {
+    stop("No files found to process.")
+  }
+
   message(paste(length(files), "files to process"))
 
   # Process files into a list containing data frames for ADV, status, and RGA
@@ -99,6 +103,9 @@ gems_process_data <- function(date = NULL,
 #' @return a list containing rga data, status data, and ADV data
 #' @export
 gems_parse_files <- function(files, clean = FALSE) {
+  if (!length(files)) {
+    stop("No files provided to parse.")
+  }
   furrr::future_map(files, gems_parse_file, clean, .progress = TRUE) |>
     purrr::transpose() |>
     furrr::future_map(purrr::list_rbind)
