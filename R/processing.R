@@ -75,23 +75,38 @@ gems_process_data <- function(date = NULL,
 
   if (parquet) {
     tictoc::tic("Time to write parquet: ")
-    dir.create(file.path(out_dir, "gems_rga"))
-    dir.create(file.path(out_dir, "gems_status.parquet"))
-    dir.create(file.path(out_dir, "gems_adv_data.parquet"))
-    rga |>
-      arrow::arrow_table() |>
-      arrow::write_dataset(paste0(out_dir, "gems_rga/rga", date, ".parquet"))
-    message("Wrote: ", paste0(out_dir, "gems_rga/rga", date, ".parquet"), "\n")
-    status |>
-      arrow::arrow_table() |>
-      # dplyr::group_by(year, month) |>
-      arrow::write_dataset(paste0(out_dir, "gems_status.parquet/status_", date, ".parquet"))
-    message("Wrote: ", paste0(out_dir, "gems_status.parquet/status_", date, ".parquet"), "\n")
-    adv_data |>
-      arrow::arrow_table() |>
-      # dplyr::group_by(year, month) |>
-      arrow::write_dataset(paste0(out_dir, "gems_adv_data.parquet/adv_data_", date, ".parquet"))
-    message("Wrote: ", paste0(out_dir, "gems_adv_data.parquet/adv_data_", date, ".parquet"), "\n")
+    if (is.null(date)) {
+      rga |>
+        arrow::arrow_table() |>
+        arrow::write_dataset(file.path(out_dir, "gems_rga.parquet"))
+      message("Wrote: ", file.path(out_dir, "gems_rga.parquet"), "\n")
+      status |>
+        arrow::arrow_table() |>
+        arrow::write_dataset(file.path(out_dir, "gems_status.parquet"))
+      message("Wrote: ", file.path(out_dir, "gems_status.parquet"), "\n")
+      adv_data |>
+        arrow::arrow_table() |>
+        arrow::write_dataset(file.path(out_dir, "gems_adv.parquet"))
+      message("Wrote: ", file.path(out_dir, "gems_adv.parquet"), "\n")
+    } else {
+      dir.create(file.path(out_dir, "gems_rga"))
+      dir.create(file.path(out_dir, "gems_status.parquet"))
+      dir.create(file.path(out_dir, "gems_adv_data.parquet"))
+      rga |>
+        arrow::arrow_table() |>
+        arrow::write_dataset(paste0(out_dir, "gems_rga/rga", date, ".parquet"))
+      message("Wrote: ", paste0(out_dir, "gems_rga/rga", date, ".parquet"), "\n")
+      status |>
+        arrow::arrow_table() |>
+        # dplyr::group_by(year, month) |>
+        arrow::write_dataset(paste0(out_dir, "gems_status.parquet/status_", date, ".parquet"))
+      message("Wrote: ", paste0(out_dir, "gems_status.parquet/status_", date, ".parquet"), "\n")
+      adv_data |>
+        arrow::arrow_table() |>
+        # dplyr::group_by(year, month) |>
+        arrow::write_dataset(paste0(out_dir, "gems_adv_data.parquet/adv_data_", date, ".parquet"))
+      message("Wrote: ", paste0(out_dir, "gems_adv_data.parquet/adv_data_", date, ".parquet"), "\n")
+    }
     message(tictoc::toc(), "\n")
   }
 }
