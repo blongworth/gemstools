@@ -4,12 +4,14 @@
 \alias{correct_status_timestamp_adv}
 \title{Correct adv timestamp using initial offset from teensy timestamp}
 \usage{
-correct_status_timestamp_adv(timestamp, adv_timestamp)
+correct_status_timestamp_adv(timestamp, adv_timestamp, use_adv_periods = TRUE)
 }
 \arguments{
 \item{timestamp}{A vector of teensy lander timestamps}
 
 \item{adv_timestamp}{A vector of ADV timestamps}
+
+\item{use_adv_periods}{If TRUE, use known ADV offset periods for correction.}
 }
 \value{
 A vector of offset-corrected adv timestamps.
@@ -17,4 +19,6 @@ A vector of offset-corrected adv timestamps.
 \description{
 Provides a per-file timestamp that does not have duplicated
 or missing timestamps due to serial packet arrival time jitter.
+Uses known offset periods to correct timestamps.
+teensy timestamp will not be accurate due to serial buffering delays.
 }

@@ -23,17 +23,31 @@ correct_status_timestamp_jitter <- function(timestamp, adv_timestamp) {
 #'
 #' Provides a per-file timestamp that does not have duplicated
 #' or missing timestamps due to serial packet arrival time jitter.
+#' Uses known offset periods to correct timestamps.
+#' teensy timestamp will not be accurate due to serial buffering delays.
 #'
 #' @param timestamp A vector of teensy lander timestamps
 #' @param adv_timestamp A vector of ADV timestamps
+#' @param use_adv_periods If TRUE, use known ADV offset periods for correction.
 #'
 #' @return A vector of offset-corrected adv timestamps.
 #' @export
-correct_status_timestamp_adv <- function(timestamp, adv_timestamp) {
+correct_status_timestamp_adv <- function(timestamp, adv_timestamp, use_adv_periods = TRUE) {
   i <- which(timestamp <= Sys.time())[1]
   if (!length(i)) return(timestamp)
-  offset <- difftime(timestamp[i], adv_timestamp[i], units = "secs")
-  adv_timestamp + offset
+  if (use_adv_periods) {
+    adv_adj <- case_when(
+      timestamp < as.Date("2025-07-08") ~ 740848785,
+      timestamp >= as.Date("2025-09-01") ~ 746986938,
+      timestamp >= as.Date("2025-08-01") ~ 355255,
+      timestamp >= as.Date("2025-07-08") ~ 4740,
+    )
+    adv_ts_cor <- adv_timestamp + adv_adj
+  } else {
+    offset <- difftime(timestamp[i], adv_timestamp[i], units = "secs")
+    adv_ts_cor <- adv_timestamp + offset
+  }
+  adv_ts_cor
 }
 
 #' Apply timestamps to GEMS ADV data

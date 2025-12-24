@@ -174,7 +174,11 @@ gems_parse_file <- function(file, clean = FALSE) {
   # remove garbage NA timestamps after
 
   # Only process ADV timestamps if both status and adv_data exist
+  # make adv_timestamp_cor the main timestamp
+  # to deal with GEMS serial delay issue
   if (nrow(adv_data) > 0 && nrow(status) > 0) {
+    status <- status |>
+      dplyr::mutate(timestamp = adv_timestamp_cor)
     adv_data <- adv_data |>
       make_gems_ts(status) |>
       filter(!is.na(timestamp))
