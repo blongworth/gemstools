@@ -3,6 +3,7 @@
 export(cal_ox)
 export(cal_ph)
 export(cal_temp)
+export(co2_ppm_to_umol_per_l)
 export(correct_status_timestamp_adv)
 export(correct_status_timestamp_jitter)
 export(gems_add_metadata)

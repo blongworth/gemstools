@@ -1,5 +1,101 @@
 # Functions for calibrating LECS data
 
+#' Convert wet CO2 mixing ratio (ppm) to dissolved CO2 concentration (µmol/L)
+#'
+#' Implements the CO2-Pro manual Section 4.3 (partial pressure from mixing ratio and pressure)
+#' and Section 4.4 (Weiss 1974 solubility) to convert wet `xCO2` in ppm to dissolved CO2
+#' concentration in µmol/L.
+#'
+#' The conversion follows:
+#' - pCO2(atm) = xCO2(ppm) * (P(mbar) / 1013.25) / 1e6
+#' - Weiss (1974) solubility:
+#'   ln(K0) = -60.2409 + 93.4517*(100/T) + 23.3585*ln(T/100)
+#'            + S*(0.023517 - 0.023656*(T/100) + 0.0047036*(T/100)^2),
+#'   where K0 has units mol kg^-1 atm^-1, T is Kelvin, and S is salinity in PSU (≈ ppt).
+#' - [CO2]_mol/kg = K0 * pCO2(atm); then mol/kg → mol/L via density (kg/L).
+#'
+#' Assumptions:
+#' - `xco2_ppm` is a wet mixing ratio from CO2-Pro (no water vapor correction needed).
+#' - Pressure compensation is already applied to `xco2_ppm`; `pressure_mbar` is total gas pressure.
+#' - Salinity is practical salinity (PSU), equivalent to parts per thousand for Weiss.
+#'
+#' Edge cases and notes:
+#' - For freshwater set `sal_psu = 0` (the Weiss seawater term drops out).
+#' - For higher precision, provide `density_kg_per_l` (default is 1 kg/L ~ 1 L/kg).
+#' - Ensure `pressure_mbar` reflects the detector headspace; default is 1013.25 mbar (1 atm).
+#'
+#' References:
+#' - Weiss, R. F. (1974). Carbon dioxide in water and seawater: the solubility of a non-ideal gas.
+#'   Marine Chemistry, 2:203–215. https://doi.org/10.1016/0304-4203(74)90015-2
+#'
+#' @param xco2_ppm Numeric vector. Wet CO2 mixing ratio in ppm.
+#' @param temp_c Numeric vector. Water temperature in degrees Celsius.
+#' @param sal_psu Numeric vector. Practical salinity (PSU).
+#' @param pressure_mbar Numeric vector. Total gas pressure in mbar. Default: 1013.25.
+#' @param density_kg_per_l Optional numeric vector. Water density in kg/L. Default: 1.0 (approx).
+#'
+#' @return Numeric vector of dissolved CO2 concentration in µmol/L.
+#'
+#' @examples
+#' # Surface seawater, T = 20 C, S = 35 PSU, xCO2 = 415 ppm, P = 1013.25 mbar
+#' co2_ppm_to_umol_per_l(415, 20, 35)
+#'
+#' # Freshwater lake, T = 10 C, S = 0, xCO2 = 500 ppm, standard pressure
+#' co2_ppm_to_umol_per_l(500, 10, 0)
+#'
+#' # With density (e.g., seawater ~1.025 kg/L)
+#' co2_ppm_to_umol_per_l(415, 20, 35, density_kg_per_l = 1.025)
+#' @export
+co2_ppm_to_umol_per_l <- function(xco2_ppm,
+                                  temp_c,
+                                  sal_psu,
+                                  pressure_mbar = 1013.25,
+                                  density_kg_per_l = NULL) {
+  # Input validation
+  if (any(!is.finite(xco2_ppm) | xco2_ppm < 0)) {
+    stop("xco2_ppm must be non-negative and finite.")
+  }
+  if (any(!is.finite(temp_c))) {
+    stop("temp_c must be finite.")
+  }
+  if (any(!is.finite(sal_psu) | sal_psu < 0)) {
+    stop("sal_psu must be non-negative and finite.")
+  }
+  if (any(!is.finite(pressure_mbar) | pressure_mbar <= 0)) {
+    stop("pressure_mbar must be positive and finite.")
+  }
+  if (is.null(density_kg_per_l)) {
+    density_kg_per_l <- 1.025
+  } else {
+    if (any(!is.finite(density_kg_per_l) | density_kg_per_l <= 0)) {
+      stop("density_kg_per_l must be positive and finite when provided.")
+    }
+  }
+
+  # Convert temperature to Kelvin
+  temp_k <- temp_c + 273.15
+
+  # Weiss (1974) K0 for seawater (S term included).
+  t_over_100 <- temp_k / 100.0
+  lnK0 <- -60.2409 +
+    93.4517 * (100.0 / temp_k) +
+    23.3585 * log(t_over_100) +
+    sal_psu * (0.023517 - 0.023656 * t_over_100 + 0.0047036 * t_over_100^2)
+
+  K0_mol_per_kg_atm <- exp(lnK0)  # mol kg^-1 atm^-1
+
+  # pCO2 in atm from ppm and mbar
+  pCO2_atm <- xco2_ppm * (pressure_mbar / 1013.25) / 1e6
+
+  # Dissolved CO2: mol/kg → mol/L using density (kg/L)
+  co2_mol_per_kg <- K0_mol_per_kg_atm * pCO2_atm
+  co2_mol_per_l  <- co2_mol_per_kg * density_kg_per_l
+
+  # µmol/L
+  co2_umol_per_l <- co2_mol_per_l * 1e6
+  return(co2_umol_per_l)
+}
+
 #' Convert Percent Oxygen Saturation to Concentration in μmol/L
 #'
 #' This function converts percent oxygen saturation to concentration in μmol/L

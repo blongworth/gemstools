@@ -36,6 +36,9 @@ gems_process_data(
 
 \item{parquet}{Set TRUE to write parquet (Arrow) data}
 }
+\value{
+A character vector of output file paths (invisible)
+}
 \description{
 Process all GEMS files in a dated folder
 }

@@ -13,16 +13,20 @@
 #' @param csv Set TRUE to write csv data
 #' @param parquet Set TRUE to write parquet (Arrow) data
 #'
+#' @return A character vector of output file paths (invisible)
+#'
 #' @export
-gems_process_data <- function(date = NULL,
-                              file_dir = NULL,
-                              files = NULL,
-                              out_dir = ".",
-                              clean = TRUE,
-                              dedupe = FALSE,
-                              resample = FALSE,
-                              csv = FALSE,
-                              parquet = TRUE) {
+gems_process_data <- function(
+  date = NULL,
+  file_dir = NULL,
+  files = NULL,
+  out_dir = ".",
+  clean = TRUE,
+  dedupe = FALSE,
+  resample = FALSE,
+  csv = FALSE,
+  parquet = TRUE
+) {
   if (is.null(c(date, file_dir, files))) {
     stop("Provide a date, file_dir, or a list of files to process.")
   }
@@ -65,50 +69,80 @@ gems_process_data <- function(date = NULL,
       ))
   }
 
+  output_paths <- character()
+
   if (csv) {
     tictoc::tic("Time to write csvs: ")
-    data.table::fwrite(rga, paste0(out_dir, "gems_rga", date, ".csv"))
-    data.table::fwrite(status, paste0(out_dir, "gems_status_", date, ".csv"))
-    data.table::fwrite(adv_data, paste0(out_dir, "gems_adv_data_", date, ".csv"))
+    csv_rga <- paste0(out_dir, "gems_rga", date, ".csv")
+    csv_status <- paste0(out_dir, "gems_status_", date, ".csv")
+    csv_adv <- paste0(out_dir, "gems_adv_data_", date, ".csv")
+    data.table::fwrite(rga, csv_rga)
+    data.table::fwrite(status, csv_status)
+    data.table::fwrite(adv_data, csv_adv)
+    output_paths <- c(output_paths, csv_rga, csv_status, csv_adv)
     message(tictoc::toc(), "\n")
   }
 
   if (parquet) {
     tictoc::tic("Time to write parquet: ")
     if (is.null(date)) {
+      path_rga <- file.path(out_dir, "gems_rga.parquet")
+      path_status <- file.path(out_dir, "gems_status.parquet")
+      path_adv <- file.path(out_dir, "gems_adv.parquet")
       rga |>
         arrow::arrow_table() |>
-        arrow::write_dataset(file.path(out_dir, "gems_rga.parquet"))
-      message("Wrote: ", file.path(out_dir, "gems_rga.parquet"), "\n")
+        arrow::write_dataset(path_rga)
+      message("Wrote: ", path_rga, "\n")
       status |>
         arrow::arrow_table() |>
-        arrow::write_dataset(file.path(out_dir, "gems_status.parquet"))
-      message("Wrote: ", file.path(out_dir, "gems_status.parquet"), "\n")
+        arrow::write_dataset(path_status)
+      message("Wrote: ", path_status, "\n")
       adv_data |>
         arrow::arrow_table() |>
-        arrow::write_dataset(file.path(out_dir, "gems_adv.parquet"))
-      message("Wrote: ", file.path(out_dir, "gems_adv.parquet"), "\n")
+        arrow::write_dataset(path_adv)
+      message("Wrote: ", path_adv, "\n")
+      output_paths <- c(output_paths, path_rga, path_status, path_adv)
     } else {
-      dir.create(file.path(out_dir, "gems_rga"))
-      dir.create(file.path(out_dir, "gems_status.parquet"))
-      dir.create(file.path(out_dir, "gems_adv_data.parquet"))
+      dir.create(file.path(out_dir, "gems_rga"), showWarnings = FALSE)
+      dir.create(
+        file.path(out_dir, "gems_status.parquet"),
+        showWarnings = FALSE
+      )
+      dir.create(
+        file.path(out_dir, "gems_adv_data.parquet"),
+        showWarnings = FALSE
+      )
+      path_rga <- paste0(out_dir, "gems_rga/rga", date, ".parquet")
+      path_status <- paste0(
+        out_dir,
+        "gems_status.parquet/status_",
+        date,
+        ".parquet"
+      )
+      path_adv <- paste0(
+        out_dir,
+        "gems_adv_data.parquet/adv_data_",
+        date,
+        ".parquet"
+      )
       rga |>
         arrow::arrow_table() |>
-        arrow::write_dataset(paste0(out_dir, "gems_rga/rga", date, ".parquet"))
-      message("Wrote: ", paste0(out_dir, "gems_rga/rga", date, ".parquet"), "\n")
+        arrow::write_dataset(path_rga)
+      message("Wrote: ", path_rga, "\n")
       status |>
         arrow::arrow_table() |>
-        # dplyr::group_by(year, month) |>
-        arrow::write_dataset(paste0(out_dir, "gems_status.parquet/status_", date, ".parquet"))
-      message("Wrote: ", paste0(out_dir, "gems_status.parquet/status_", date, ".parquet"), "\n")
+        arrow::write_dataset(path_status)
+      message("Wrote: ", path_status, "\n")
       adv_data |>
         arrow::arrow_table() |>
-        # dplyr::group_by(year, month) |>
-        arrow::write_dataset(paste0(out_dir, "gems_adv_data.parquet/adv_data_", date, ".parquet"))
-      message("Wrote: ", paste0(out_dir, "gems_adv_data.parquet/adv_data_", date, ".parquet"), "\n")
+        arrow::write_dataset(path_adv)
+      message("Wrote: ", path_adv, "\n")
+      output_paths <- c(output_paths, path_rga, path_status, path_adv)
     }
     message(tictoc::toc(), "\n")
   }
+
+  invisible(output_paths)
 }
 
 #' Parallelized Read gems data from files and parse into dataframes
@@ -163,8 +197,12 @@ gems_parse_file <- function(file, clean = FALSE) {
   }
 
   if (clean) {
-    if (nrow(rga) > 0) rga <- gems_clean_rga(rga)
-    if (nrow(status) > 0) status <- gems_clean_status(status)
+    if (nrow(rga) > 0) {
+      rga <- gems_clean_rga(rga)
+    }
+    if (nrow(status) > 0) {
+      status <- gems_clean_status(status)
+    }
     if (nrow(adv_data) > 0) adv_data <- gems_clean_adv_data(adv_data)
   }
 
@@ -187,21 +225,36 @@ gems_parse_file <- function(file, clean = FALSE) {
   # Select needed data here - only if columns exist
   if (nrow(rga) > 0) {
     rga <- rga |>
-    select(timestamp, mass, current, pressure)
+      select(timestamp, mass, current, pressure)
   }
   if (nrow(status) > 0) {
     status <- status |>
       select(
-        timestamp, adv_timestamp,
-        bat, soundspeed, heading, pitch, roll, temp
+        timestamp,
+        adv_timestamp,
+        bat,
+        soundspeed,
+        heading,
+        pitch,
+        roll,
+        temp
       )
   }
 
   if (nrow(adv_data) > 0) {
     adv_data <- adv_data |>
       select(
-        timestamp, pressure, u, v, w, amp1, amp2, amp3,
-        corr1, corr2, corr3
+        timestamp,
+        pressure,
+        u,
+        v,
+        w,
+        amp1,
+        amp2,
+        amp3,
+        corr1,
+        corr2,
+        corr3
       )
   }
 
